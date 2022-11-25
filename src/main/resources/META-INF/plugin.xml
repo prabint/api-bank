@@ -1,0 +1,60 @@
+<idea-plugin>
+    <id>prabin.timsina.api.bank</id>
+    <name>API Bank</name>
+    <vendor email="prabin.tims@gmail.com" url="https://github.com/prabint/api-bank">Prabin Timsina</vendor>
+
+    <description><![CDATA[
+        An <a href="https://github.com/prabint/api-bank">open source</a> plugin to execute and store API requests.
+        <ul>
+          <li>Create request using url, method, body and header in an editor dialog.</li>
+          <li>Create collections of environment variables, for e.g. development, production etc.</li>
+          <li>Quickly access and execute API requests via quick select popup.</li>
+        </ul>
+        <b>Editor Dialog</b>: Tools->API Bank->Request Editor or alt+shift+e (win) or option+shift+e (mac) <br>
+        <b>Quick Select</b>: Tools->API Bank->Request Quick Select or alt+shift+s (win) or option+shift+s (mac)
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <idea-version since-build="213.6461.79"/>
+    <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="API Bank (Exception)" displayType="BALLOON"/>
+        <notificationGroup id="API Bank (Warning)" displayType="BALLOON"/>
+        <notificationGroup id="API Bank (Success)" displayType="BALLOON"/>
+        <projectService serviceImplementation="api.bank.services.ApiDetailPersistentService"/>
+        <projectService serviceImplementation="api.bank.services.VariableCollectionPersistentService"/>
+    </extensions>
+
+    <actions>
+        <group id="prabin.timsina.api.bank.MainGroup"
+               popup="true"
+               text="API Bank">
+
+            <add-to-group group-id="ToolsMenu"
+                          anchor="last"/>
+
+            <action id="prabin.timsina.api.bank.QuickSelect"
+                    class="api.bank.quick.QuickSelect"
+                    text="Request Quick Select"
+                    description="List all the apis in a popup so developer can execute with one click. Output is shown as bubble notification.">
+
+                <keyboard-shortcut keymap="Mac OS X"
+                                   first-keystroke="alt shift s"/>
+
+                <keyboard-shortcut keymap="$default"
+                                   first-keystroke="alt shift s"/>
+            </action>
+
+            <action id="prabin.timsina.api.bank.actions.ShowEditorDialogAction"
+                    class="api.bank.actions.ShowEditorDialogAction"
+                    description="Shows a form to create and edit requests and environment variables"
+                    text="Request Editor">
+
+                <keyboard-shortcut keymap="Mac OS X"
+                                   first-keystroke="alt shift e"/>
+
+                <keyboard-shortcut keymap="$default"
+                                   first-keystroke="alt shift e"/>
+            </action>
+        </group>
+    </actions>
+</idea-plugin>

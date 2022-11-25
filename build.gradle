@@ -1,0 +1,65 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.7.20'
+    id 'org.jetbrains.intellij' version '1.9.0'
+}
+
+group 'prabin.timsina'
+version '1.0'
+
+def remoteRobotVersion = "0.11.16"
+
+repositories {
+    mavenCentral()
+    maven { url = "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies" }
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.10'
+    implementation 'io.insert-koin:koin-core:3.2.2'
+    implementation 'io.insert-koin:koin-annotations:1.0.3'
+
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.4"
+
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:4.0.0'
+    testImplementation 'com.squareup.okhttp3:logging-interceptor:4.10.0'
+    testImplementation 'com.intellij.remoterobot:remote-robot:' + remoteRobotVersion
+    testImplementation 'com.intellij.remoterobot:remote-fixtures:' + remoteRobotVersion
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.9.0')
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
+    testRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.9.0')
+
+}
+
+intellij {
+    updateSinceUntilBuild = false
+    version.set("213.7172.25")
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "11"
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "11"
+}
+
+runIdeForUiTests {
+    systemProperty "ide.show.tips.on.startup.default.value", false
+    systemProperty "idea.trust.all.projects", true
+    systemProperty "robot-server.port", "8082" // default port 8580
+}
+
+downloadRobotServerPlugin {
+    version = remoteRobotVersion
+}
+
+test {
+    useJUnitPlatform()
+}
+
+patchPluginXml {
+    changeNotes = """First release of the API Bank plugin"""
+}

@@ -6,6 +6,9 @@ A plugin to quickly make API requests in Intellij based IDE:
 * Create collections of environment variables, for e.g. development, production etc.
 * Quickly access and execute API requests via quick select popup.
 
+## Installation
+<a href="https://plugins.jetbrains.com/plugin/20522-api-bank">Install plugin from JetBrains Marketplace</a>
+
 ## Usage Guide
 
 ### 1. Editor

@@ -3,6 +3,8 @@ package api.bank.multitab
 import api.bank.list.ListTransferHandler
 import api.bank.list.toListOfKeyValue
 import api.bank.models.VariableCollection
+import api.bank.table.TableCellListener
+import api.bank.table.TableColumnAdjuster
 import api.bank.utils.createActionButton
 import api.bank.utils.createPanelWithTopControls
 import api.bank.utils.listener.SimpleDocumentListener
@@ -17,8 +19,6 @@ import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
-import utils.TableCellListener
-import utils.TableColumnAdjuster
 import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout

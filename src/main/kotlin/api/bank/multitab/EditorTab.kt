@@ -6,6 +6,8 @@ import api.bank.models.Constants.COLOR_GREEN
 import api.bank.models.Constants.COLOR_RED
 import api.bank.models.RequestDetail
 import api.bank.repository.CoreRepository
+import api.bank.table.TableCellListener
+import api.bank.table.TableColumnAdjuster
 import api.bank.utils.*
 import api.bank.utils.dispatcher.DispatcherProvider
 import api.bank.utils.listener.SimpleDocumentListener
@@ -20,8 +22,6 @@ import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import kotlinx.coroutines.*
-import utils.TableCellListener
-import utils.TableColumnAdjuster
 import java.awt.*
 import java.awt.event.ActionEvent
 import javax.swing.*

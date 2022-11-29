@@ -7,9 +7,11 @@ import com.intellij.remoterobot.fixtures.JButtonFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.utils.keyboard
 import com.intellij.remoterobot.utils.waitFor
+import com.intellij.remoterobot.utils.waitForIgnoringError
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import ui.frames.*
@@ -25,15 +27,17 @@ import java.awt.event.KeyEvent
 import java.time.Duration.ofSeconds
 
 /**
- * Steps:
- * 1. In one terminal run: ./gradlew clean && ./gradlew runIdeForUiTests
- * 2. Wait for new IDE to open
- * 3. In second terminal run: ./gradlew test --tests "ui.FullUiTest.verify requests and variables data"
- * 4. Immediately set focus back to the new IDE
- * 5. Sit back and let the test complete
+ * To run the test:
+ * 1. ./gradlew clean && ./gradlew runIdeForUiTests & ./gradlew test --tests "FullUiTest.verify requests and variables data"
+ * 2. Sit back and let the test complete
  */
 @ExtendWith(RemoteRobotExtension::class)
 class FullUiTest {
+
+    @BeforeEach
+    fun waitForIde(remoteRobot: RemoteRobot) {
+        waitForIgnoringError(ofSeconds(30)) { remoteRobot.callJs("true") }
+    }
 
     @Test
     fun `verify requests and variables data`(remoteRobot: RemoteRobot): Unit = with(remoteRobot) {

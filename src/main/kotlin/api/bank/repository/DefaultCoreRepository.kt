@@ -17,7 +17,7 @@ class DefaultCoreRepository constructor(
 
     override suspend fun executeRequest(
         requestDetail: RequestDetail,
-        variables: List<Array<String>>
+        variables: List<Array<String>>,
     ): ResponseDetail {
         return withContext(dispatcherProvider.io) {
             val updatedDetail = substituteVariables(requestDetail, variables)
@@ -34,12 +34,16 @@ class DefaultCoreRepository constructor(
 
                 when {
                     urlConnection.responseCode >= 400 -> {
-                        val body = urlConnection.errorStream.bufferedReader().use { reader -> reader.readText() }
+                        val body = urlConnection.errorStream?.let { inputStream ->
+                            inputStream.bufferedReader().use { reader -> reader.readText() }
+                        }
                         ResponseDetail(body, urlConnection.responseCode, urlConnection.responseMessage)
                     }
 
                     else -> {
-                        val body = urlConnection.inputStream.bufferedReader().use { reader -> reader.readText() }
+                        val body = urlConnection.inputStream?.let { inputStream ->
+                            inputStream.bufferedReader().use { reader -> reader.readText() }
+                        }
                         ResponseDetail(body, urlConnection.responseCode, urlConnection.responseMessage)
                     }
                 }
@@ -51,7 +55,7 @@ class DefaultCoreRepository constructor(
 
     private fun substituteVariables(
         requestDetail: RequestDetail,
-        variableItems: List<Array<String>>
+        variableItems: List<Array<String>>,
     ): RequestDetail {
         val variables = variableItems.toMutableList()
 

@@ -5,6 +5,7 @@ import api.bank.models.Constants
 import api.bank.models.Constants.COLOR_GREEN
 import api.bank.models.Constants.COLOR_RED
 import api.bank.models.RequestDetail
+import api.bank.models.ResponseDetail
 import api.bank.repository.CoreRepository
 import api.bank.table.TableCellListener
 import api.bank.table.TableColumnAdjuster
@@ -13,6 +14,7 @@ import api.bank.utils.dispatcher.DispatcherProvider
 import api.bank.utils.listener.SimpleDocumentListener
 import com.google.gson.Gson
 import com.google.gson.JsonParser
+import com.google.gson.JsonSyntaxException
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.JBSplitter
@@ -399,7 +401,7 @@ class EditorTab(
                 variables = getVariables(),
             )
 
-            jOutput.text = gson.toJson(JsonParser.parseString(output.body))
+            setOutputBody(output)
 
             val color = when (output.code < 400) {
                 true -> COLOR_GREEN
@@ -407,6 +409,20 @@ class EditorTab(
             }
 
             jOutputLabel.text = "<html><font color='$color'>${output.code}</font> ${output.message}</html>"
+        }
+    }
+
+    private fun setOutputBody(output: ResponseDetail) {
+        val outputBody = output.body
+
+        jOutput.text = if (outputBody.isNullOrBlank()) {
+            outputBody
+        } else {
+            try {
+                gson.toJson(JsonParser.parseString(outputBody))
+            } catch (e: JsonSyntaxException) {
+                outputBody
+            }
         }
     }
 }

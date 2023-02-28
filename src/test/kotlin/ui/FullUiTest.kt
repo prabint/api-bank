@@ -128,6 +128,20 @@ class FullUiTest {
             assertEquals(variablesData, variablesTable.collectItems())
         }
 
+        // Clone then search
+        requestsTabFrame {
+            // Clone
+            tab.click()
+            cloneRequestButton.click()
+            nameField.text = "Get All Data"
+
+            // Search
+            searchField.click()
+            keyboard { enterText("all", 0) }
+            assertEquals(requestsList.collectItems().size, 1)
+            assertEquals("[POST] Get All Data", requestsList.collectItems()[0])
+        }
+
         find(JButtonFixture::class.java, byXpath("//div[@text='Save']")).click()
     }
 

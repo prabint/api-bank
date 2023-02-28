@@ -159,9 +159,12 @@ class RequestsTab(
                 accessibleContext.accessibleName = "Add new request"
             },
             createActionButton("Remove", AllIcons.General.Remove) { onDeleteListItemClicked() },
-            createActionButton("Clone", AllIcons.Actions.Copy) { onCloneListItemClicked() },
+            createActionButton("Clone", AllIcons.Actions.Copy) { onCloneListItemClicked() }.apply {
+                accessibleContext.accessibleName = "Clone request"
+            },
             minWidth = 180,
-            bottomComponent = JBScrollPane(jList)
+            bottomComponent = JBScrollPane(jList),
+            onSearch = { searchText -> onSearch(searchText) }
         )
     }
 
@@ -204,8 +207,13 @@ class RequestsTab(
 
         if (result == MessageConstants.NO) return
 
-        editUiTracker.remove(listModel.get(selectedIndex).id)
-        modifiableItems.removeAt(selectedIndex)
+        val idToBeDeleted = modifiableItems[selectedIndex].id
+        val indexToBeDeleted = modifiableItems.indexOfFirst { it.id == idToBeDeleted }
+        editUiTracker.remove(idToBeDeleted)
+        // If list is filtered via search, [modifiableItems] and [listModel] differ as [listModel] only contains
+        // filtered items whereas [modifiableItems] contains all items.
+        // So, [indexToBeDeleted] is needed to delete correct item from [modifiableItems].
+        modifiableItems.removeAt(indexToBeDeleted)
         listModel.remove(selectedIndex)
         // Select next item from the list
         if (listModel.isEmpty) return
@@ -245,6 +253,15 @@ class RequestsTab(
         listModel.add(0, clone)
 
         jList.selectedIndex = 0
+    }
+
+    private fun onSearch(searchText: String) {
+        val filteredList = modifiableItems.filter {
+            it.name?.lowercase()?.contains(searchText.lowercase()) == true
+        }
+        listModel.removeAllElements()
+        listModel.addAll(filteredList)
+        if (filteredList.isNotEmpty()) jList.selectedIndex = 0
     }
 
     companion object {

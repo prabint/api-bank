@@ -1,14 +1,17 @@
 package api.bank.utils
 
+import api.bank.utils.listener.SimpleDocumentListener
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.actionSystem.impl.ActionButton
 import com.intellij.ui.JBColor
+import com.intellij.ui.SearchTextField
 import com.intellij.util.ui.JBFont
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
+import javax.swing.event.DocumentEvent
 
 fun createToggleButton(text: String, icon: Icon, onClick: (Boolean) -> Unit): ActionButton {
     var localState = false
@@ -65,11 +68,13 @@ fun createActionButton(text: String, icon: Icon, onClick: () -> Unit): ActionBut
 |                    |
 |                    |
 ----------------------
+ * @param onSearch callback for search field. View hidden if null.
  */
 fun createPanelWithTopControls(
     vararg actionButtons: ActionButton,
     bottomComponent: JComponent,
     minWidth: Int,
+    onSearch: ((String) -> Unit)?,
 ): JPanel {
     val mainPanel = JPanel()
     val width = actionButtons.size
@@ -99,12 +104,33 @@ fun createPanelWithTopControls(
     rootGbc.fill = GridBagConstraints.BOTH
     mainPanel.add(controllerPanel, rootGbc)
 
+    rootGbc.fill = GridBagConstraints.BOTH
+    rootGbc.gridx = 0
+    rootGbc.gridy = 1
+    rootGbc.gridwidth = width
+
+    // ------------
+    // Search panel
+    // ------------
+    if (onSearch != null) {
+        val searchField = SearchTextField(false).apply {
+            accessibleContext.accessibleName = "Search field"
+        }
+        searchField.border = BorderFactory.createMatteBorder(0, 1, 0, 1, JBColor.border())
+        searchField.addDocumentListener(object : SimpleDocumentListener() {
+            override fun update(e: DocumentEvent?) {
+                onSearch(searchField.text)
+            }
+        })
+        mainPanel.add(searchField, rootGbc)
+    }
+
     // ------------
     // Bottom panel
     // ------------
     rootGbc.fill = GridBagConstraints.BOTH
     rootGbc.gridx = 0
-    rootGbc.gridy = 1
+    rootGbc.gridy = 2
     rootGbc.gridwidth = width
 
     bottomComponent.border = BorderFactory.createLineBorder(JBColor.border())

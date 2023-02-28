@@ -28,8 +28,14 @@ class RequestsTabFrame(
     val addNewRequestButton
         get() = button(byXpath("//div[@accessiblename='Add new request']"))
 
+    val cloneRequestButton
+        get() = button(byXpath("//div[@accessiblename='Clone request']"))
+
     val nameField
         get() = textField(byXpath("//div[@accessiblename='Request name']"))
+
+    val searchField
+        get() = textField(byXpath("//div[@accessiblename='Search field']"))
 
     val executeButton
         get() = button(byXpath("//div[@accessiblename='Execute api']"))

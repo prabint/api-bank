@@ -164,6 +164,7 @@ class VariablesTab(
                     addListSelectionListener(listSelectionListener)
                     addMouseListener(listMouseAdapter)
                 }),
+                onSearch = null
             ), gbc
         )
 
@@ -234,7 +235,8 @@ class VariablesTab(
                     accessibleContext.accessibleName = "Remove selected row"
                 },
                 minWidth = 350,
-                bottomComponent = JBScrollPane(jTable)
+                bottomComponent = JBScrollPane(jTable),
+                onSearch = null
             ), gbc
         )
 

@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'prabin.timsina'
-version '1.0.1'
+version '1.0.2'
 
 def remoteRobotVersion = "0.11.16"
 
@@ -58,4 +58,8 @@ downloadRobotServerPlugin {
 
 test {
     useJUnitPlatform()
+}
+
+patchPluginXml {
+    changeNotes = """Added search functionality for request list"""
 }

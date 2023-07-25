@@ -73,6 +73,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
                 stopKoin()
             }
         })
+        isModal = false
     }
 
     override fun createCenterPanel(): JComponent {

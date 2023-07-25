@@ -7,8 +7,12 @@ A plugin to quickly make API requests in Intellij based IDE:
 * Quickly access and execute API requests via quick select popup.
 
 ## Installation
+### Option 1
 <a href="https://plugins.jetbrains.com/plugin/20522-api-bank">Install plugin from JetBrains Marketplace</a>
-
+### Option 2
+1. Clone this project
+2. Build the plugin `./gradlew buildPlugin`
+3. Use `Install Plugin from Disk` action to install the plugin located at `/build/distributions/api-bank.zip`
 ## Usage Guide
 
 ### 1. Editor

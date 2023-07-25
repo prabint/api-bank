@@ -146,7 +146,7 @@ class FullUiTest {
     }
 
     @AfterEach
-    fun closeProject(remoteRobot: RemoteRobot) = with(remoteRobot) {
+    fun closeProject(remoteRobot: RemoteRobot) {
         // FIXME: This closes dev IDE as well
         //  idea { menuBar.select("File", "Close Project") }
     }

@@ -62,5 +62,5 @@ test {
 }
 
 patchPluginXml {
-    changeNotes = """Added search functionality for request list"""
+    changeNotes = """Allow IDE access while dialog is up"""
 }

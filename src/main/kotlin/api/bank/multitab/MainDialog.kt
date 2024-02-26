@@ -1,14 +1,17 @@
 package api.bank.multitab
 
-import api.bank.models.RequestDetail
+import api.bank.models.Constants
+import api.bank.models.RequestGroup
 import api.bank.models.VariableCollection
 import api.bank.modules.pluginModule
 import api.bank.repository.CoreRepository
-import api.bank.services.ApiDetailPersistentService
 import api.bank.services.VariableCollectionPersistentService
 import api.bank.utils.dispatcher.DispatcherProvider
 import api.bank.utils.listener.SimpleWindowListener
+import api.bank.utils.migrateXmlJson
+import api.bank.utils.saveAsJsonFile
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -20,36 +23,36 @@ import org.koin.core.context.stopKoin
 import java.awt.Dimension
 import java.awt.event.ActionEvent
 import java.awt.event.WindowEvent
+import java.io.File
+import java.nio.file.Paths
 import javax.swing.AbstractAction
 import javax.swing.JComponent
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
 
 /**
  * Main dialog that has 2 tabs: Requests and Variables
  */
 class MainDialog(private val project: Project) : DialogWrapper(project), KoinComponent {
+    private val rootFile = File(Paths.get(project.basePath!!, ".idea").toString())
 
     init {
         GlobalContext.getOrNull() ?: GlobalContext.startKoin { modules(pluginModule) }
+
+        rootFile.mkdirs()
+
+        val file = File(rootFile, Constants.FILE_API_DETAIL_PERSISTENT)
+        if (file.createNewFile()) {
+            file.writeText("[]")
+        }
     }
 
     private val gson: Gson by inject()
     private val coreRepository: CoreRepository by inject()
     private val dispatchProvider: DispatcherProvider by inject()
 
-    private val persistentDetails
-        get() = ApiDetailPersistentService.getInstance(project).requestDetailListState
-
-    private val persistentVariable
-        get() = VariableCollectionPersistentService.getInstance(project).collection
-
-    // Deep copy
-    private val modifiableRequestDetails = ArrayList<RequestDetail>().apply {
-        persistentDetails.items.map { item -> add(gson.fromJson(gson.toJson(item), RequestDetail::class.java)) }
-    }
-
-    // Deep copy
-    private val modifiableVariable = ArrayList<VariableCollection>().apply {
-        persistentVariable.items.map { item -> add(gson.fromJson(gson.toJson(item), VariableCollection::class.java)) }
+    init {
+        migrateXmlJson(rootFile, gson)
     }
 
     private val applyAction = object : AbstractAction("Apply") {
@@ -58,10 +61,25 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         }
     }
 
+    private val persistentVariable
+        get() = VariableCollectionPersistentService.getInstance(project).collection
+
+    // Deep copy
+    private val modifiableVariable = ArrayList<VariableCollection>().apply {
+        persistentVariable.items.map { item -> add(gson.fromJson(gson.toJson(item), VariableCollection::class.java)) }
+    }
+
     private val variablesTab = VariablesTab(modifiableVariable, gson)
-    private val requestsTab = RequestsTab(gson, coreRepository, dispatchProvider, modifiableRequestDetails) {
-        return@RequestsTab variablesTab.getActive()
-    }.get()
+
+    private val requestsTab = RequestsTab(
+        gson = gson,
+        coreRepository = coreRepository,
+        dispatchProvider = dispatchProvider,
+        treeModel = constructTreeModel(gson, rootFile),
+        getVariables = { variablesTab.getActive() },
+    )
+
+    private val requestTabComponent = requestsTab.get()
 
     init {
         init()
@@ -79,19 +97,19 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     override fun createCenterPanel(): JComponent {
         return JBTabbedPane().apply {
             insertTab(
-                "Requests",
-                AllIcons.Ide.UpDown,
-                requestsTab,
-                "Collection of API",
-                0,
+                /* title = */ "Requests",
+                /* icon = */ AllIcons.Ide.UpDown,
+                /* component = */ requestTabComponent,
+                /* tip = */ "Collection of API",
+                /* index = */ 0,
             )
 
             insertTab(
-                "Variables",
-                AllIcons.General.InlineVariablesHover,
-                variablesTab.get(),
-                "Collection of environment variables",
-                1
+                /* title = */ "Variables",
+                /* icon = */ AllIcons.General.InlineVariablesHover,
+                /* component = */ variablesTab.get(),
+                /* tip = */ "Collection of environment variables",
+                /* index = */ 1
             )
 
             // Used to prevent bug where dialog appears in smaller size
@@ -102,16 +120,42 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
 
     override fun createActions() = arrayOf(cancelAction, okAction, applyAction, helpAction)
 
+    override fun getPreferredFocusedComponent() = requestsTab.tree
+
     override fun doOKAction() {
         save()
         super.doOKAction()
     }
 
-    private fun save() {
-        persistentDetails.items.clear()
-        persistentVariable.items.clear()
+    private fun constructTreeModel(
+        gson: Gson,
+        rootDir: File,
+    ): DefaultTreeModel {
+        val root = DefaultMutableTreeNode()
 
-        persistentDetails.items.addAll(modifiableRequestDetails.map { it.copy() })
+        val jsonFile = File(rootDir, Constants.FILE_API_DETAIL_PERSISTENT)
+        val jsonString = jsonFile.readText()
+        val requestGroups: List<RequestGroup> = gson.fromJson(
+            jsonString,
+            object : TypeToken<List<RequestGroup>>() {}.type
+        )
+
+        requestGroups.forEach { requestGroup ->
+            val parent = DefaultMutableTreeNode(requestGroup.groupName)
+            root.add(parent)
+
+            requestGroup.requests.forEach { request ->
+                parent.add(DefaultMutableTreeNode(request))
+            }
+        }
+
+        return DefaultTreeModel(root)
+    }
+
+    private fun save() {
+        persistentVariable.items.clear()
         persistentVariable.items.addAll(modifiableVariable.map { it.copy() })
+
+        requestsTab.getModel().saveAsJsonFile(gson, rootFile)
     }
 }

@@ -23,8 +23,12 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
+import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
-import java.awt.*
+import java.awt.Component
+import java.awt.Dimension
+import java.awt.GridBagConstraints
+import java.awt.GridBagLayout
 import java.awt.event.ActionEvent
 import javax.swing.*
 import javax.swing.event.DocumentEvent
@@ -37,7 +41,7 @@ import kotlin.random.Random.Default.nextLong
  */
 class EditorTab(
     dispatcherProvider: DispatcherProvider,
-    private val requestDetailInMemory: RequestDetail,
+    val requestDetailInMemory: RequestDetail,
     private val gson: Gson,
     private val coreRepository: CoreRepository,
     private val getVariables: () -> ArrayList<Array<String>>,
@@ -64,7 +68,7 @@ class EditorTab(
         val upperPanel = JPanel()
         upperPanel.layout = GridBagLayout()
         val gbc = GridBagConstraints()
-        gbc.insets = Insets(4, 0, 4, 4)
+        gbc.insets = JBUI.insets(4, 0, 4, 4)
 
         gbc.fill = GridBagConstraints.HORIZONTAL
         gbc.anchor = GridBagConstraints.CENTER
@@ -78,6 +82,7 @@ class EditorTab(
         upperPanel.add(JBTextField().apply {
             accessibleContext.accessibleName = "Request name"
             text = requestDetailInMemory.name
+            addActionListener { } // Prevent closing dialog when Enter key is pressed
             document.addDocumentListener(object : SimpleDocumentListener() {
                 override fun update(e: DocumentEvent?) {
                     requestDetailInMemory.name = text
@@ -122,6 +127,7 @@ class EditorTab(
         upperPanel.add(JBTextField().apply {
             accessibleContext.accessibleName = "Request url"
             text = requestDetailInMemory.url
+            addActionListener { } // Prevent closing dialog when Enter key is pressed
             document.addDocumentListener(object : SimpleDocumentListener() {
                 override fun update(e: DocumentEvent?) {
                     requestDetailInMemory.url = text
@@ -324,7 +330,7 @@ class EditorTab(
      * "key": ${{count}}
      * }
      *
-     * So, first replace ${{count}} with a long, e.g 1234
+     * So, first replace ${{count}} with a long, e.g. 1234
      * {
      * "key": 1234
      * }

@@ -11,7 +11,7 @@ import java.net.URL
 import java.util.*
 
 @Single
-class DefaultCoreRepository constructor(
+class DefaultCoreRepository(
     private val dispatcherProvider: DispatcherProvider,
 ) : CoreRepository {
 
@@ -68,7 +68,7 @@ class DefaultCoreRepository constructor(
         for ((key, value) in variables) {
             val keyAsVariable = key.toVariableRepresentation()
 
-            url = url?.replace(keyAsVariable, value)
+            url = url.replace(keyAsVariable, value)
             body = body?.replace(keyAsVariable, value)
         }
 

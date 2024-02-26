@@ -1,14 +1,14 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.9.0'
-    id 'org.jetbrains.intellij' version '1.13.0'
+    id 'org.jetbrains.kotlin.jvm' version '1.9.22'
+    id 'org.jetbrains.intellij' version '1.17.2'
 }
 
 group 'prabin.timsina'
-version '1.0.3'
+version '1.0.4'
 
 def remoteRobotVersion = "0.11.19"
 def jUnitVersion = "5.10.0"
-def kotlinxCoroutinesVersion = "1.7.2"
+def kotlinxCoroutinesVersion = "1.8.0"
 
 repositories {
     mavenCentral()
@@ -17,15 +17,15 @@ repositories {
 
 dependencies {
     implementation 'com.google.code.gson:gson:2.10.1'
+    implementation('org.json:json:20240205')
     implementation 'io.insert-koin:koin-core:3.4.2'
     implementation 'io.insert-koin:koin-annotations:1.2.2'
 
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib:'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:' + kotlinxCoroutinesVersion
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-swing:' + kotlinxCoroutinesVersion
 
     testImplementation 'org.mockito.kotlin:mockito-kotlin:5.0.0'
-    testImplementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
+    testImplementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
     testImplementation 'com.intellij.remoterobot:remote-robot:' + remoteRobotVersion
     testImplementation 'com.intellij.remoterobot:remote-fixtures:' + remoteRobotVersion
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
@@ -36,15 +36,15 @@ dependencies {
 
 intellij {
     updateSinceUntilBuild = false
-    version.set("213.7172.25")
+    version.set("232.8660.185")
 }
 
 compileKotlin {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
 }
 
 compileTestKotlin {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
 }
 
 runIdeForUiTests {
@@ -62,5 +62,5 @@ test {
 }
 
 patchPluginXml {
-    changeNotes = """Allow IDE access while dialog is up"""
+    changeNotes = """Feature: Group requests"""
 }

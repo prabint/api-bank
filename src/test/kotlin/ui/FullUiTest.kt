@@ -27,6 +27,8 @@ import java.awt.event.KeyEvent
 import java.time.Duration.ofSeconds
 
 /**
+ * TODO: Update
+ *
  * To run the test:
  * 1. ./gradlew clean && ./gradlew runIdeForUiTests & ./gradlew test --tests "FullUiTest.verify requests and variables data"
  * 2. Sit back and let the test complete

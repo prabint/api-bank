@@ -1,113 +1,235 @@
 package api.bank.multitab
 
-import api.bank.list.ListTransferHandler
-import api.bank.models.Constants.COLOR_BLUE
-import api.bank.models.Constants.COLOR_GREEN
-import api.bank.models.Constants.COLOR_RED
+import api.bank.models.Constants
 import api.bank.models.RequestDetail
 import api.bank.repository.CoreRepository
-import api.bank.utils.createActionButton
-import api.bank.utils.createPanelWithTopControls
+import api.bank.utils.*
 import api.bank.utils.dispatcher.DispatcherProvider
-import api.bank.utils.pushToNorthwest
 import com.google.gson.Gson
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.ui.MessageConstants
+import com.intellij.openapi.ui.InputValidator
+import com.intellij.openapi.ui.JBMenuItem
+import com.intellij.openapi.ui.JBPopupMenu
 import com.intellij.openapi.ui.Messages
+import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
+import com.intellij.ui.SimpleTextAttributes
+import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.speedSearch.SpeedSearchSupply
+import com.intellij.ui.treeStructure.Tree
+import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.awt.datatransfer.DataFlavor
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.util.*
 import javax.swing.*
-import javax.swing.event.ListSelectionEvent
-import javax.swing.event.ListSelectionListener
+import javax.swing.event.TreeModelEvent
+import javax.swing.event.TreeModelListener
+import javax.swing.event.TreeSelectionListener
+import javax.swing.tree.*
 
 /**
  * UI that has list API requests on the left and editor on the right
  */
 class RequestsTab(
     private val gson: Gson,
+    private val treeModel: DefaultTreeModel,
     private val coreRepository: CoreRepository,
     private val dispatchProvider: DispatcherProvider,
-    private val modifiableItems: ArrayList<RequestDetail>,
     private val getVariables: () -> ArrayList<Array<String>>,
 ) {
     private lateinit var listAndEditorSplitter: JBSplitter
-    private lateinit var jList: JBList<RequestDetail>
+    internal lateinit var tree: Tree
+        private set
 
-    private val listModel = DefaultListModel<RequestDetail>()
+    private val requestDetails: MutableList<RequestDetail> = treeModel.toRequests()
 
-    // Stores UI in memory to emulate tab-like feature where the UI
-    // components are maintained even after navigating to different tabs
+    /**
+     * Stores UI in memory to emulate tab-like feature where the UI components are maintained even after navigating to
+     * different tabs
+     */
     private val editUiTracker = HashMap<String, EditorTab>()
 
-    private val listMouseAdapter = object : MouseAdapter() {
+    private val treeItemClickMouseAdapter = object : MouseAdapter() {
         override fun mousePressed(e: MouseEvent) {
+            // https://coderanch.com/t/461207/java/JTree-row-selection-mouseclick
+            // Allow right-clicking anywhere in the entire JTree row, not just the text
             if (SwingUtilities.isRightMouseButton(e)) {
-                jList.selectedIndex = jList.locationToIndex(e.point)
-                setUpPopUpMenu(jList, e)
+                val closestRow = tree.getClosestRowForLocation(e.x, e.y)
+                val closestRowBounds = tree.getRowBounds(closestRow)
+                if (e.y >= closestRowBounds.getY() && e.y < closestRowBounds.getY() + closestRowBounds.getHeight()) {
+                    if (e.x > closestRowBounds.getX() && closestRow < tree.rowCount) {
+                        showTreeItemClickedPopUpMenu(tree, e)
+                    }
+                }
             }
         }
 
         override fun mouseClicked(e: MouseEvent?) {
             if (e?.clickCount == 2) {
-                editUiTracker[jList.selectedValue.id]?.onRunClicked()
+                executeRequest()
             }
         }
     }
 
-    private val listSelectionListener = object : ListSelectionListener {
-        override fun valueChanged(e: ListSelectionEvent?) {
-            val selectedValue = jList.selectedValue
+    private val treeModelListener = object : TreeModelListener {
+        override fun treeNodesRemoved(p0: TreeModelEvent?) {
+            if ((tree.model.root as DefaultMutableTreeNode).childCount == 0) {
+                listAndEditorSplitter.secondComponent = createEmptyRightPanel()
+            }
+        }
 
-            // selectedValue will be null when a list item is deleted and before next item is selected
-            if (selectedValue == null) {
-                if (listModel.isEmpty) {
-                    listAndEditorSplitter.secondComponent = null
+        override fun treeNodesChanged(p0: TreeModelEvent?) = Unit
+        override fun treeNodesInserted(p0: TreeModelEvent?) = Unit
+        override fun treeStructureChanged(p0: TreeModelEvent?) = Unit
+    }
+
+    private val treeItemSelectionListener = TreeSelectionListener {
+        val selectedValue = (it.path.lastPathComponent as? DefaultMutableTreeNode)?.getRequestDetail()
+            ?: return@TreeSelectionListener
+
+        if (editUiTracker.containsKey(selectedValue.id)) {
+            listAndEditorSplitter.secondComponent = editUiTracker[selectedValue.id]?.panel
+            return@TreeSelectionListener
+        }
+
+        val editorTab = EditorTab(
+            gson = gson,
+            getVariables = getVariables,
+            coreRepository = coreRepository,
+            dispatcherProvider = dispatchProvider,
+            requestDetailInMemory = selectedValue,
+            onDisplayNameUpdated = { detail -> onEditorUpdated(detail) },
+            onMethodUpdated = { detail -> onEditorUpdated(detail) }
+        )
+
+        editUiTracker[selectedValue.id] = editorTab
+        listAndEditorSplitter.secondComponent = editorTab.panel
+    }
+
+    private val addNewItemToolbarMouseAdapter = object : MouseAdapter() {
+        override fun mouseClicked(mouseEvent: MouseEvent) {
+            val popupMenu = JBPopupMenu()
+
+            JBMenuItem("New Request", AllIcons.FileTypes.Json).apply {
+                addActionListener { addNewRequestAction(tree.selectionPath!!) }
+                if (!tree.isEmpty) {
+                    popupMenu.add(this)
+                    popupMenu.addSeparator()
                 }
-                return
             }
 
-            if (editUiTracker.containsKey(selectedValue.id)) {
-                listAndEditorSplitter.secondComponent = editUiTracker[selectedValue.id]?.panel
-                return
+            JBMenuItem("New Group", AllIcons.Actions.NewFolder).apply {
+                addActionListener { renameGroup(true) }
+                popupMenu.add(this)
             }
 
-            val editorTab = EditorTab(
-                dispatcherProvider = dispatchProvider,
-                requestDetailInMemory = jList.selectedValue,
-                gson = gson,
-                coreRepository = coreRepository,
-                getVariables = getVariables,
-                onDisplayNameUpdated = { detail -> onEditorUpdated(detail) },
-                onMethodUpdated = { detail -> onEditorUpdated(detail) }
-            )
-            editUiTracker[jList.selectedValue?.id!!] = editorTab
-            listAndEditorSplitter.secondComponent = editorTab.panel
+            popupMenu.show(tree, mouseEvent.x, mouseEvent.y)
         }
     }
 
     internal fun get(): JComponent {
         listAndEditorSplitter = JBSplitter(false, 0.3f, 0.2f, 0.7f).apply {
-            firstComponent = createLeftPanel()
+            firstComponent = setUpLeftPanel()
             secondComponent = null
         }
 
         // Initially select first item in the list, if available
-        if (!listModel.isEmpty) {
-            jList.selectedIndex = 0
+        findFirstRequestDetailNode(tree.model.root as DefaultMutableTreeNode)?.let {
+            tree.selectionPath = TreePath(it.path)
         }
 
         return listAndEditorSplitter
     }
 
-    private fun createLeftPanel(): JPanel {
+    internal fun getModel() = tree.model
+
+    private fun setUpTree(): JPanel {
+        Tree(treeModel).apply {
+            tree = this
+            this.isRootVisible = false
+            this.dragEnabled = true
+            this.dropMode = DropMode.ON_OR_INSERT
+            this.showsRootHandles = true
+            this.selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
+            this.transferHandler = ApiBankTreeTransferHandler()
+            this.addTreeSelectionListener(treeItemSelectionListener)
+            this.addMouseListener(treeItemClickMouseAdapter)
+            this.model.addTreeModelListener(treeModelListener)
+            this.expandTree()
+
+            this.emptyText.appendLine(
+                /* text = */ "Create new request group",
+                /* attrs = */ SimpleTextAttributes.LINK_PLAIN_ATTRIBUTES
+            ) { renameGroup(true) }
+
+            TreeUIHelper.getInstance().installTreeSpeedSearch(
+                /* tree = */ tree,
+                /* convertor = */ { (it.lastPathComponent as DefaultMutableTreeNode).getRequestDetail()?.name },
+                /* canExpand = */ true
+            )
+
+            val speedSearchSupply = SpeedSearchSupply.getSupply(tree, true)
+
+            this.cellRenderer = TreeCellRenderer { _, p1, _, _, _, _, _ ->
+                val label = when (val userObject = (p1 as DefaultMutableTreeNode).userObject) {
+                    is String -> {
+                        val groupName = p1.userObject as String
+                        JBLabel("<html><b>${groupName}</b></html>")
+                    }
+
+                    is RequestDetail -> {
+                        val color = when (userObject.method) {
+                            "POST", "PUT" -> Constants.COLOR_BLUE
+                            "DELETE" -> Constants.COLOR_RED
+                            else -> Constants.COLOR_GREEN
+                        }
+
+                        val jLabel =
+                            JBLabel("<html><font color='${color}'>[${userObject.method}] </font>${userObject.name}</html>")
+
+                        val prefix = speedSearchSupply?.enteredPrefix
+                        if (!prefix.isNullOrBlank() && userObject.name.contains(prefix, true)) {
+                            jLabel.border = BorderFactory.createLineBorder(JBColor.PINK)
+                        }
+
+                        jLabel
+                    }
+
+                    else -> {
+                        JBLabel("Error! Please report.")
+                    }
+                }
+
+                val desiredWidth = tree.width
+                val desiredHeight: Int = label.getPreferredSize().height
+                label.size = Dimension(desiredWidth, desiredHeight)
+
+                label
+            }
+        }
+
+        return createPanelWithTopControls(
+            createActionButton("Add", AllIcons.General.Add) { }.apply {
+                addMouseListener(addNewItemToolbarMouseAdapter)
+                accessibleContext.accessibleName = ADD_NEW_REQUEST_TEXT
+            },
+            createActionButton("Remove", AllIcons.General.Remove) {
+                onDeleteListItemClicked()
+            },
+            createActionButton("Clone", AllIcons.Actions.Copy) {
+                onCloneItemClicked()
+            },
+            minWidth = 180,
+            bottomComponent = JBScrollPane(tree),
+            onSearch = null,
+        )
+    }
+
+    private fun setUpLeftPanel(): JPanel {
         val mainPanel = JPanel(GridBagLayout())
         val gbc = GridBagConstraints()
 
@@ -115,156 +237,311 @@ class RequestsTab(
         gbc.fill = GridBagConstraints.BOTH
         gbc.gridx = 0
         gbc.gridy = 0
-        mainPanel.add(setUpList(), gbc)
+        mainPanel.add(setUpTree(), gbc)
 
         gbc.pushToNorthwest(mainPanel)
         return mainPanel
     }
 
-    private fun setUpList(): JPanel {
-        JBList<RequestDetail>().apply {
-            jList = this
-            accessibleContext.accessibleName = "Requests list"
-            model = listModel
-            listModel.addAll(modifiableItems)
-
-            cellRenderer = ListCellRenderer { _, value, _, _, _ ->
-                val color = when (value?.method) {
-                    "POST", "PUT" -> COLOR_BLUE
-                    "DELETE" -> COLOR_RED
-                    else -> COLOR_GREEN
-                }
-                JBLabel("<html><font color='${color}'>[${value?.method}]</font> ${value?.name}</html>")
-            }
-            fixedCellHeight = 25
-            setEmptyText("""Click "+" to create new request""")
-
-            // Setup DnD
-            selectionMode = ListSelectionModel.SINGLE_SELECTION
-            dropMode = DropMode.INSERT
-            dragEnabled = true
-            transferHandler = ListTransferHandler<RequestDetail>(LIST_DATA_FLAVOR) { from, to ->
-                val fromItem = modifiableItems[from]
-                modifiableItems.removeAt(from)
-                modifiableItems.add(to, fromItem)
-                selectedIndex = to
-            }
-
-            addListSelectionListener(listSelectionListener)
-            addMouseListener(listMouseAdapter)
+    private fun createEmptyRightPanel(): JPanel {
+        val mainPanel = JPanel(GridBagLayout())
+        val gbc = GridBagConstraints()
+        gbc.weightx = 1.0
+        gbc.weighty = 1.0
+        gbc.fill = GridBagConstraints.BOTH
+        mainPanel.add(JBLabel("""Click "+" to create new request"""), gbc)
+        return mainPanel.apply {
+            preferredSize = Dimension(500, 700)
         }
-
-        return createPanelWithTopControls(
-            createActionButton("Add", AllIcons.General.Add) { onAddNewListItemClicked() }.apply {
-                accessibleContext.accessibleName = "Add new request"
-            },
-            createActionButton("Remove", AllIcons.General.Remove) { onDeleteListItemClicked() },
-            createActionButton("Clone", AllIcons.Actions.Copy) { onCloneListItemClicked() }.apply {
-                accessibleContext.accessibleName = "Clone request"
-            },
-            minWidth = 180,
-            bottomComponent = JBScrollPane(jList),
-            onSearch = { searchText -> onSearch(searchText) }
-        )
     }
 
-    private fun setUpPopUpMenu(list: JBList<RequestDetail>, e: MouseEvent) {
-        val menu = JPopupMenu()
-        val run = JMenuItem("Run", AllIcons.Actions.Execute).apply {
-            addActionListener { }
-        }
-        val add = JMenuItem("Add", AllIcons.General.Add).apply {
-            addActionListener { onAddNewListItemClicked() }
-        }
-        val clone = JMenuItem("Clone", AllIcons.Actions.Copy).apply {
-            addActionListener { onCloneListItemClicked() }
-        }
-        val delete = JMenuItem("Delete", AllIcons.General.Remove).apply {
-            addActionListener { onDeleteListItemClicked() }
-        }
-
-        menu.add(run)
-        menu.add(add)
-        menu.add(clone)
-        menu.add(delete)
-        menu.show(list, e.point.x, e.point.y)
+    private fun executeRequest() {
+        val requestDetail =
+            (tree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode)?.getRequestDetail()
+        editUiTracker[requestDetail?.id]?.onRunClicked()
     }
 
     private fun onEditorUpdated(requestDetail: RequestDetail) {
-        val index = listModel.toArray().indexOfFirst { (it as RequestDetail).id == requestDetail.id }
-        listModel.set(index, requestDetail)
+        val index = requestDetails.indexOfFirst { it.id == requestDetail.id }
+        requestDetails[index] = requestDetail
     }
 
     private fun onDeleteListItemClicked() {
-        val selectedIndex = jList.selectedIndex
-        if (selectedIndex == -1) return
+        val node = tree.selectionPath!!.lastPathComponent as DefaultMutableTreeNode
+        if (node.isGroupNode()) {
+            deleteGroup()
+        } else {
+            deleteRequest()
+        }
+    }
 
-        val result: Int = Messages.showYesNoDialog(
-            "Are you sure you want to delete ${listModel.get(selectedIndex).name}?",
-            "Confirm Delete",
-            AllIcons.General.Warning
+    private fun showTreeItemClickedPopUpMenu(tree: Tree, mouseEvent: MouseEvent) {
+        val isRoot = tree.selectionPath?.pathCount == 1
+        val isRequestDetail =
+            (tree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode)?.userObject is RequestDetail
+        val isGroup = !isRoot && !isRequestDetail
+
+        val popupMenu = JBPopupMenu()
+        JBMenuItem(ADD_NEW_REQUEST_TEXT, AllIcons.General.Add).apply {
+            if (isGroup) {
+                addActionListener { addNewRequestAction(tree.selectionPath!!) }
+                popupMenu.add(this)
+            }
+        }
+
+        JBMenuItem("Rename group", AllIcons.Actions.Edit).apply {
+            if (isGroup) {
+                addActionListener { renameGroup(isCreateNewGroup = false) }
+                popupMenu.addSeparator()
+                popupMenu.add(this)
+            }
+        }
+
+        JMenuItem("Clone", AllIcons.Actions.Copy).apply {
+            if (isGroup) {
+                addActionListener { onCloneItemClicked() }
+                popupMenu.addSeparator()
+                popupMenu.add(this)
+            }
+        }
+
+        JBMenuItem("Delete group", AllIcons.Actions.DeleteTagHover).apply {
+            if (isGroup) {
+                addActionListener { deleteGroup() }
+                popupMenu.addSeparator()
+                popupMenu.add(this)
+            }
+        }
+
+        JMenuItem("Run", AllIcons.Actions.Execute).apply {
+            if (isRequestDetail) {
+                addActionListener { executeRequest() }
+                popupMenu.add(this)
+            }
+        }
+
+        JMenuItem("Clone", AllIcons.Actions.Copy).apply {
+            if (isRequestDetail) {
+                addActionListener { onCloneItemClicked() }
+                popupMenu.addSeparator()
+                popupMenu.add(this)
+            }
+        }
+
+        JBMenuItem("Delete request", AllIcons.General.Remove).apply {
+            if (isRequestDetail) {
+                addActionListener { deleteRequest() }
+                popupMenu.addSeparator()
+                popupMenu.add(this)
+            }
+        }
+
+        popupMenu.show(tree, mouseEvent.x, mouseEvent.y)
+    }
+
+    private fun onCloneItemClicked() {
+        val newNode: DefaultMutableTreeNode
+
+        val treeModel = tree.model as DefaultTreeModel
+        val selectionPath = tree.selectionPath!!
+        val selectionNode = selectionPath.lastPathComponent as DefaultMutableTreeNode
+        val selectionParentNode = selectionNode.parent as DefaultMutableTreeNode
+        val selectionIndex = tree.model.getIndexOfChild(selectionNode.parent, selectionNode)
+        val selectionGroupExpanded = tree.isExpanded(TreePath((selectionNode).path))
+
+        // If cloning a request
+        val requestDetail = selectionNode.getRequestDetail()
+        if (requestDetail != null) {
+            val requestDetailClone = requestDetail.copy(
+                id = UUID.randomUUID().toString(),
+                name = requestDetail.name + " (Copy)"
+            )
+
+            newNode = DefaultMutableTreeNode(requestDetailClone)
+            requestDetails.add(requestDetailClone)
+        } else { // Cloning a group (and its children)
+            val groupName = selectionNode.getGroupName() + " (Copy)"
+            newNode = DefaultMutableTreeNode(groupName)
+
+            // Clone the children
+            selectionNode
+                .children()
+                .asSequence()
+                .forEach { treeNode ->
+                    val requestDetailClone = treeNode.getRequestDetail()!!.copy(
+                        id = UUID.randomUUID().toString(),
+                    )
+                    requestDetails.add(requestDetailClone)
+                    newNode.add(DefaultMutableTreeNode(requestDetailClone))
+                }
+        }
+
+        // Add the new node below the currently selected node
+        treeModel.insertNodeInto(newNode, selectionParentNode, selectionIndex + 1)
+
+        // Select the new node
+        tree.selectionPath = TreePath(newNode.path)
+
+        // Expand the newly cloned group if the original node was also expanded
+        if (selectionGroupExpanded) {
+            tree.expandPath(tree.selectionPath)
+        }
+    }
+
+    private fun renameGroup(isCreateNewGroup: Boolean) {
+        val node = (tree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode)
+        val allGroupNames = tree.getAllGroupNames()
+
+        val name = Messages.showInputDialog(
+            /* message = */ "Enter group name",
+            /* title = */ "Group Name",
+            /* icon = */ AllIcons.Actions.NewFolder,
+            /* initialValue = */ if (isCreateNewGroup) "" else (node?.userObject as? String).orEmpty(),
+            /* validator = */ object : InputValidator {
+                override fun checkInput(inputString: String?) =
+                    !inputString.isNullOrBlank() && !allGroupNames.contains(inputString)
+
+                override fun canClose(inputString: String?) = true
+            }
         )
 
-        if (result == MessageConstants.NO) return
+        if (name.isNullOrBlank()) return
 
-        val idToBeDeleted = modifiableItems[selectedIndex].id
-        val indexToBeDeleted = modifiableItems.indexOfFirst { it.id == idToBeDeleted }
-        editUiTracker.remove(idToBeDeleted)
-        // If list is filtered via search, [modifiableItems] and [listModel] differ as [listModel] only contains
-        // filtered items whereas [modifiableItems] contains all items.
-        // So, [indexToBeDeleted] is needed to delete correct item from [modifiableItems].
-        modifiableItems.removeAt(indexToBeDeleted)
-        listModel.remove(selectedIndex)
-        // Select next item from the list
-        if (listModel.isEmpty) return
-        jList.selectedIndex = when (selectedIndex == jList.model.size) {
-            true -> jList.model.size - 1
-            false -> selectedIndex
+        if (isCreateNewGroup) {
+            // Add the new group to the model
+            val newGroup = DefaultMutableTreeNode(name)
+            (tree.model as DefaultTreeModel).insertNodeInto(
+                newGroup,
+                tree.model.root as DefaultMutableTreeNode,
+                0
+            )
+
+            // Mark this new group as selected so that new request is added to it
+            tree.selectionPath = TreePath(newGroup)
+            addNewRequestAction(tree.selectionPath!!)
+            tree.expandPath(TreePath(tree.model.root))
+        } else {
+            (tree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode)?.let {
+                it.userObject = name
+                (tree.model as DefaultTreeModel).reload(it)
+            }
         }
     }
 
-    private fun onAddNewListItemClicked() {
-        val dummy = RequestDetail(
-            id = UUID.randomUUID().toString(),
-            name = "(New Request)",
-            url = "https://",
-            method = "GET",
-            header = ArrayList(),
-            body = null,
+    private fun deleteGroup() {
+        val selectionPath = tree.selectionPath ?: return
+        val selectedNode = selectionPath.lastPathComponent as DefaultMutableTreeNode
+        val groupName = selectedNode.userObject as String
+
+        val confirmDialog = Messages.showOkCancelDialog(
+            "Delete '${groupName}' and all its content?",
+            "Delete Group",
+            "Delete",
+            "Cancel",
+            AllIcons.General.WarningDialog
         )
 
-        // Add new item to top of list and select it
-        modifiableItems.add(0, dummy)
-        listModel.add(0, dummy)
-        jList.selectedIndex = 0
+        if (confirmDialog == Messages.CANCEL) return
+        tree.selectionPath = findNextRequest() ?: findPreviousRequest()
+        (tree.model as DefaultTreeModel).removeNodeFromParent(selectedNode)
     }
 
-    private fun onCloneListItemClicked() {
-        val selectedIndex = jList.selectedIndex
-        if (selectedIndex == -1) return
+    private fun deleteRequest() {
+        val selectionPath = tree.selectionPath ?: return
+        val selectedNode = selectionPath.lastPathComponent as DefaultMutableTreeNode
 
-        val selectedItem = jList.selectedValue
-        val clone = gson.fromJson(gson.toJson(selectedItem), RequestDetail::class.java).apply {
-            id = UUID.randomUUID().toString()
-            name = "Copy of ${selectedItem.name}"
-        }
+        val requestDetail = (selectionPath.lastPathComponent as DefaultMutableTreeNode).userObject as RequestDetail
 
-        modifiableItems.add(0, clone)
-        listModel.add(0, clone)
+        val confirmDialog = Messages.showOkCancelDialog(
+            "Delete '${requestDetail.name}'?",
+            "Group Request",
+            "Delete",
+            "Cancel",
+            AllIcons.General.WarningDialog
+        )
 
-        jList.selectedIndex = 0
+        if (confirmDialog == Messages.CANCEL) return
+
+        tree.selectionPath = findNextRequest() ?: findPreviousRequest()
+        (tree.model as DefaultTreeModel).removeNodeFromParent(selectedNode)
     }
 
-    private fun onSearch(searchText: String) {
-        val filteredList = modifiableItems.filter {
-            it.name?.lowercase()?.contains(searchText.lowercase()) == true
+    private fun addNewRequestAction(selectionPath: TreePath) {
+        val selectedNode = selectionPath.lastPathComponent as DefaultMutableTreeNode
+        val selectedIndex = if (selectedNode.userObject is String) {
+            0
+        } else {
+            tree.model.getIndexOfChild(selectedNode.parent, selectedNode) + 1
         }
-        listModel.removeAllElements()
-        listModel.addAll(filteredList)
-        if (filteredList.isNotEmpty()) jList.selectedIndex = 0
+
+        val parentNode = if (selectedNode.userObject is String) {
+            selectedNode
+        } else {
+            selectedNode.parent as DefaultMutableTreeNode
+        }
+
+        val newDefaultRequest = RequestDetail.DEFAULT
+
+        val model = tree.model as DefaultTreeModel
+        val newNode = DefaultMutableTreeNode(newDefaultRequest)
+
+        model.insertNodeInto(newNode, parentNode, selectedIndex)
+        tree.selectionPath = TreePath(newNode.path)
+        requestDetails.add(newDefaultRequest)
+        tree.expandPath(tree.selectionPath)
+    }
+
+    private fun findNextRequest(): TreePath? {
+        var nextNode: DefaultMutableTreeNode? = tree.selectionPath?.lastPathComponent as DefaultMutableTreeNode
+        nextNode = when (nextNode?.isGroupNode()) {
+            true -> nextNode.nextSibling
+            else -> nextNode?.nextNode
+        }
+
+        while (nextNode != null) {
+            if (nextNode.userObject is RequestDetail) {
+                return TreePath(nextNode.path)
+            }
+            nextNode = (nextNode as? DefaultMutableTreeNode)?.nextNode
+        }
+
+        return null
+    }
+
+    private fun findPreviousRequest(): TreePath? {
+        var nextNode: DefaultMutableTreeNode? = tree.selectionPath?.lastPathComponent as DefaultMutableTreeNode
+        if (nextNode?.isGroupNode() == true) {
+            nextNode = nextNode.previousSibling
+            nextNode = nextNode?.lastChild as? DefaultMutableTreeNode
+        } else {
+            nextNode = nextNode?.previousNode
+        }
+        while (nextNode != null) {
+            if (nextNode.userObject is RequestDetail) {
+                return TreePath(nextNode.path)
+            }
+            nextNode = (nextNode as? DefaultMutableTreeNode)?.previousNode
+        }
+
+        return null
+    }
+
+    private fun findFirstRequestDetailNode(node: DefaultMutableTreeNode): DefaultMutableTreeNode? {
+        return when (node.userObject) {
+            is RequestDetail -> node
+            else -> {
+                for (i in 0 until node.childCount) {
+                    val child = findFirstRequestDetailNode(node.getChildAt(i) as DefaultMutableTreeNode)
+                    if (child != null) {
+                        return child
+                    }
+                }
+                null
+            }
+        }
     }
 
     companion object {
-        private val LIST_DATA_FLAVOR = DataFlavor(RequestDetail::class.java, "java/${RequestDetail::class.simpleName}")
+        private const val ADD_NEW_REQUEST_TEXT = "Add new request"
     }
 }

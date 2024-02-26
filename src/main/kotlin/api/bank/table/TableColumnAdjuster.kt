@@ -28,7 +28,7 @@ import javax.swing.table.TableModel
  *  or more of the other columns must decrease. Because of this the resize mode
  *  of RESIZE_ALL_COLUMNS will work the best.
  */
-class TableColumnAdjuster constructor(private val table: JTable, private val spacing: Int = 6) :
+class TableColumnAdjuster(private val table: JTable, private val spacing: Int = 6) :
     PropertyChangeListener,
     TableModelListener {
     private var isColumnHeaderIncluded = false

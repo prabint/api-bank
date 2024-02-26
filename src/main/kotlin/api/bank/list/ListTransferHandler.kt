@@ -47,11 +47,7 @@ class ListTransferHandler<T>(
             return false
         }
 
-        if (fromIndex == toIndex || fromIndex == -1 || toIndex == -1) {
-            return false
-        }
-
-        return true
+        return !(fromIndex == toIndex || fromIndex == -1 || toIndex == -1)
     }
 
     override fun exportDone(source: JComponent?, data: Transferable?, action: Int) {

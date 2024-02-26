@@ -1,13 +1,17 @@
 package api.bank.quick
 
 import api.bank.actions.ShowEditorDialogAction
+import api.bank.models.Constants
+import api.bank.models.RequestDetail
+import api.bank.models.RequestGroup
 import api.bank.modules.pluginModule
 import api.bank.notification.notifyException
 import api.bank.notification.notifySuccess
 import api.bank.notification.notifyWarning
 import api.bank.repository.CoreRepository
-import api.bank.services.ApiDetailPersistentService
 import api.bank.services.VariableCollectionPersistentService
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.intellij.ide.actions.QuickSwitchSchemeAction
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.project.Project
@@ -15,16 +19,30 @@ import kotlinx.coroutines.*
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.GlobalContext
+import java.io.File
+import java.nio.file.Paths
 
 class QuickSelect : QuickSwitchSchemeAction(), KoinComponent {
 
     private val coreRepository: CoreRepository by inject()
+    private val gson: Gson by inject()
+
+    private fun getRequests(project: Project): List<RequestDetail> {
+        val rootDir = File(Paths.get(project.basePath!!, ".idea").toString())
+        val jsonFile = File(rootDir, Constants.FILE_API_DETAIL_PERSISTENT)
+
+        if (!jsonFile.exists()) return emptyList()
+
+        return gson
+            .fromJson<List<RequestGroup>>(jsonFile.readText(), object : TypeToken<List<RequestGroup>>() {}.type)
+            .flatMap { it.requests }
+    }
 
     override fun fillActions(project: Project?, group: DefaultActionGroup, dataContext: DataContext) {
 
         GlobalContext.getOrNull() ?: GlobalContext.startKoin { modules(pluginModule) }
 
-        val items = ApiDetailPersistentService.getInstance(project!!).requestDetailListState.items
+        val items = getRequests(project!!)
         val variableCollection = VariableCollectionPersistentService.getInstance(project).collection.items
 
         for (item in items) {

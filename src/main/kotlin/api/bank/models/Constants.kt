@@ -5,6 +5,7 @@ object Constants {
     internal const val COLOR_GREEN = "#32CD32"
     internal const val COLOR_RED = "#FFB6C1"
     internal const val COLOR_BLUE = "#1E90FF"
-    internal const val FILE_VARIABLE_COLLECTION_PERSISTENT = "variable_collection_persistent.xml"
+    internal const val FILE_VARIABLE_COLLECTION_PERSISTENT = "variable_collection_persistent.json"
+    internal const val FILE_SETTINGS = "api_bank_plugin_settings.xml"
     internal const val FILE_API_DETAIL_PERSISTENT = "api_detail_persistent.json"
 }

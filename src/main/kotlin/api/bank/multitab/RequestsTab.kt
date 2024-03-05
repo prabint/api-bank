@@ -460,7 +460,7 @@ class RequestsTab(
 
         val confirmDialog = Messages.showOkCancelDialog(
             "Delete '${requestDetail.name}'?",
-            "Group Request",
+            "Delete Request",
             "Delete",
             "Cancel",
             AllIcons.General.WarningDialog

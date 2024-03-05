@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'prabin.timsina'
-version '1.0.4'
+version '1.0.5'
 
 def remoteRobotVersion = "0.11.19"
 def jUnitVersion = "5.10.0"

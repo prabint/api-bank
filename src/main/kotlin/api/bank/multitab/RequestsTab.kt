@@ -172,44 +172,9 @@ class RequestsTab(
                 /* canExpand = */ true
             )
 
-            val speedSearchSupply = SpeedSearchSupply.getSupply(tree, true)
-
-            this.cellRenderer = TreeCellRenderer { _, p1, _, _, _, _, _ ->
-                val label = when (val userObject = (p1 as DefaultMutableTreeNode).userObject) {
-                    is String -> {
-                        val groupName = p1.userObject as String
-                        JBLabel("<html><b>${groupName}</b></html>")
-                    }
-
-                    is RequestDetail -> {
-                        val color = when (userObject.method) {
-                            "POST", "PUT" -> Constants.COLOR_BLUE
-                            "DELETE" -> Constants.COLOR_RED
-                            else -> Constants.COLOR_GREEN
-                        }
-
-                        val jLabel =
-                            JBLabel("<html><font color='${color}'>[${userObject.method}] </font>${userObject.name}</html>")
-
-                        val prefix = speedSearchSupply?.enteredPrefix
-                        if (!prefix.isNullOrBlank() && userObject.name.contains(prefix, true)) {
-                            jLabel.border = BorderFactory.createLineBorder(JBColor.PINK)
-                        }
-
-                        jLabel
-                    }
-
-                    else -> {
-                        JBLabel("Error! Please report.")
-                    }
-                }
-
-                val desiredWidth = tree.width
-                val desiredHeight: Int = label.getPreferredSize().height
-                label.size = Dimension(desiredWidth, desiredHeight)
-
-                label
-            }
+            this.cellRenderer = setUpCellRenderer(
+                speedSearchSupply = SpeedSearchSupply.getSupply(tree, true)
+            )
         }
 
         return createPanelWithTopControls(
@@ -227,6 +192,47 @@ class RequestsTab(
             bottomComponent = JBScrollPane(tree),
             onSearch = null,
         )
+    }
+
+    private fun setUpCellRenderer(speedSearchSupply: SpeedSearchSupply?): TreeCellRenderer {
+        val background = JBColor.background().darker()
+        val residueColor = "rgba(${background.red}, ${background.green}, ${background.blue}, 0.5)"
+
+        return TreeCellRenderer { _, p1, _, _, _, _, _ ->
+            val prefix = speedSearchSupply?.enteredPrefix
+
+            val text = when (val userObject = (p1 as DefaultMutableTreeNode).userObject) {
+                is String -> {
+                    val groupName = p1.userObject as String
+
+                    if (!prefix.isNullOrBlank() && !groupName.contains(prefix, true)) {
+                        "<html><font color='$residueColor'><b>${groupName}</b></font></html>"
+                    } else {
+                        "<html><b>${groupName}</b></html>"
+                    }
+                }
+
+                is RequestDetail -> {
+                    val color = when (userObject.method) {
+                        "POST", "PUT" -> Constants.COLOR_BLUE
+                        "DELETE" -> Constants.COLOR_RED
+                        else -> Constants.COLOR_GREEN
+                    }
+
+                    if (!prefix.isNullOrBlank() && !userObject.name.contains(prefix, true)) {
+                        "<html><font color='$residueColor'>[${userObject.method}] ${userObject.name}</font></html>"
+                    } else {
+                        "<html><font color='${color}'>[${userObject.method}] </font>${userObject.name}</html>"
+                    }
+                }
+
+                else -> {
+                    "Error! Please report."
+                }
+            }
+
+            JBLabel(text).apply { size = Dimension(tree.width, preferredSize.height) }
+        }
     }
 
     private fun setUpLeftPanel(): JPanel {

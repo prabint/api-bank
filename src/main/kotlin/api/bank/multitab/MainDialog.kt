@@ -1,15 +1,14 @@
 package api.bank.multitab
 
-import api.bank.models.Constants
 import api.bank.models.RequestGroup
-import api.bank.models.VariableCollection
 import api.bank.modules.pluginModule
+import api.bank.notification.notifyException
 import api.bank.repository.CoreRepository
-import api.bank.services.VariableCollectionPersistentService
+import api.bank.settings.ApiBankSettingsPersistentStateComponent
+import api.bank.settings.ApiBankSettingsState
+import api.bank.utils.*
 import api.bank.utils.dispatcher.DispatcherProvider
 import api.bank.utils.listener.SimpleWindowListener
-import api.bank.utils.migrateXmlJson
-import api.bank.utils.saveAsJsonFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.intellij.icons.AllIcons
@@ -24,7 +23,6 @@ import java.awt.Dimension
 import java.awt.event.ActionEvent
 import java.awt.event.WindowEvent
 import java.io.File
-import java.nio.file.Paths
 import javax.swing.AbstractAction
 import javax.swing.JComponent
 import javax.swing.tree.DefaultMutableTreeNode
@@ -34,8 +32,6 @@ import javax.swing.tree.DefaultTreeModel
  * Main dialog that has 2 tabs: Requests and Variables
  */
 class MainDialog(private val project: Project) : DialogWrapper(project), KoinComponent {
-    private val rootFile = File(Paths.get(project.basePath!!, ".idea").toString())
-
     init {
         GlobalContext.getOrNull() ?: GlobalContext.startKoin { modules(pluginModule) }
     }
@@ -45,7 +41,8 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     private val dispatchProvider: DispatcherProvider by inject()
 
     init {
-        migrateXmlJson(rootFile, gson)
+        migrateEnvVarXmlJson(project, gson)
+        migrateRequestDetailsXmlJson(project, gson)
     }
 
     private val applyAction = object : AbstractAction("Apply") {
@@ -54,21 +51,20 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         }
     }
 
-    private val persistentVariable
-        get() = VariableCollectionPersistentService.getInstance(project).collection
+    private val envVarCollection = getVariableCollectionFromJson(gson, project)
 
-    // Deep copy
-    private val modifiableVariable = ArrayList<VariableCollection>().apply {
-        persistentVariable.items.map { item -> add(gson.fromJson(gson.toJson(item), VariableCollection::class.java)) }
+    private val settingsTab = SettingsTab(project) {
+        save()
+        close(0, true)
     }
 
-    private val variablesTab = VariablesTab(modifiableVariable, gson)
+    private val variablesTab = VariablesTab(envVarCollection, gson)
 
     private val requestsTab = RequestsTab(
         gson = gson,
         coreRepository = coreRepository,
         dispatchProvider = dispatchProvider,
-        treeModel = constructTreeModel(gson, rootFile),
+        treeModel = constructTreeModel(gson),
         getVariables = { variablesTab.getActive() },
     )
 
@@ -105,6 +101,14 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
                 /* index = */ 1
             )
 
+            insertTab(
+                /* title = */ "Settings",
+                /* icon = */ AllIcons.General.Settings,
+                /* component = */ settingsTab.get(),
+                /* tip = */ "Settings",
+                /* index = */ 2
+            )
+
             // Used to prevent bug where dialog appears in smaller size
             // because header, body and output UI fail to occupy space
             minimumSize = Dimension(700, 700)
@@ -120,35 +124,45 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         super.doOKAction()
     }
 
-    private fun constructTreeModel(
-        gson: Gson,
-        rootDir: File,
-    ): DefaultTreeModel {
+    private fun constructTreeModel(gson: Gson): DefaultTreeModel {
         val root = DefaultMutableTreeNode()
 
-        val jsonFile = File(rootDir, Constants.FILE_API_DETAIL_PERSISTENT)
+        val jsonFile = File(ApiBankSettingsPersistentStateComponent.getInstance(project).state.requestFilePath)
         val jsonString = jsonFile.readText()
-        val requestGroups: List<RequestGroup> = gson.fromJson(
-            jsonString,
-            object : TypeToken<List<RequestGroup>>() {}.type
-        )
 
-        requestGroups.forEach { requestGroup ->
-            val parent = DefaultMutableTreeNode(requestGroup.groupName)
-            root.add(parent)
+        try {
+            val requestGroups: List<RequestGroup> = gson.fromJson(
+                jsonString,
+                object : TypeToken<List<RequestGroup>>() {}.type
+            )
 
-            requestGroup.requests.forEach { request ->
-                parent.add(DefaultMutableTreeNode(request))
+            requestGroups.forEach { requestGroup ->
+                val parent = DefaultMutableTreeNode(requestGroup.groupName)
+                root.add(parent)
+
+                requestGroup.requests.forEach { request ->
+                    parent.add(DefaultMutableTreeNode(request))
+                }
             }
+        } catch (e: Exception) {
+            notifyException(project, "Failed to parse ${jsonFile.path}. ${e.stackTraceToString()}")
         }
 
         return DefaultTreeModel(root)
     }
 
     private fun save() {
-        persistentVariable.items.clear()
-        persistentVariable.items.addAll(modifiableVariable.map { it.copy() })
+        saveVariableCollectionAsJsonFile(gson = gson, project = project, value = envVarCollection)
+        requestsTab.getModel().saveRequestsAsJsonFile(project = project, gson = gson)
 
-        requestsTab.getModel().saveAsJsonFile(gson, rootFile)
+        // Must be last
+        ApiBankSettingsPersistentStateComponent
+            .getInstance(project)
+            .loadState(
+                ApiBankSettingsState(
+                    requestFilePath = settingsTab.requestTextField.text,
+                    envFilePath = settingsTab.envTextField.text,
+                )
+            )
     }
 }

@@ -1,14 +1,16 @@
 package api.bank.multitab
 
-import api.bank.models.Constants
 import api.bank.models.RequestGroup
-import api.bank.models.VariableCollection
 import api.bank.modules.pluginModule
 import api.bank.repository.CoreRepository
-import api.bank.services.VariableCollectionPersistentService
+import api.bank.services.getEnvFromJson
+import api.bank.services.saveEnvToJsonFile
+import api.bank.settings.ApiBankSettingsState
+import api.bank.settings.ApiBankSettingsStateComponent
 import api.bank.utils.dispatcher.DispatcherProvider
 import api.bank.utils.listener.SimpleWindowListener
-import api.bank.utils.migrateXmlJson
+import api.bank.utils.migrateEnvVarXmlJson
+import api.bank.utils.migrateRequestDetailsXmlJson
 import api.bank.utils.saveAsJsonFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -34,7 +36,7 @@ import javax.swing.tree.DefaultTreeModel
  * Main dialog that has 2 tabs: Requests and Variables
  */
 class MainDialog(private val project: Project) : DialogWrapper(project), KoinComponent {
-    private val rootFile = File(Paths.get(project.basePath!!, ".idea").toString())
+    private val ideaDir = File(Paths.get(project.basePath!!, ".idea").toString())
 
     init {
         GlobalContext.getOrNull() ?: GlobalContext.startKoin { modules(pluginModule) }
@@ -45,7 +47,8 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     private val dispatchProvider: DispatcherProvider by inject()
 
     init {
-        migrateXmlJson(rootFile, gson)
+        migrateEnvVarXmlJson(project, ideaDir, gson)
+        migrateRequestDetailsXmlJson(project, ideaDir, gson)
     }
 
     private val applyAction = object : AbstractAction("Apply") {
@@ -54,21 +57,20 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         }
     }
 
-    private val persistentVariable
-        get() = VariableCollectionPersistentService.getInstance(project).collection
+    private val envVarCollection = getEnvFromJson(gson, project)
 
-    // Deep copy
-    private val modifiableVariable = ArrayList<VariableCollection>().apply {
-        persistentVariable.items.map { item -> add(gson.fromJson(gson.toJson(item), VariableCollection::class.java)) }
+    private val settingsTab = SettingsTab(project) {
+        save()
+        close(0, true)
     }
 
-    private val variablesTab = VariablesTab(modifiableVariable, gson)
+    private val variablesTab = VariablesTab(envVarCollection, gson)
 
     private val requestsTab = RequestsTab(
         gson = gson,
         coreRepository = coreRepository,
         dispatchProvider = dispatchProvider,
-        treeModel = constructTreeModel(gson, rootFile),
+        treeModel = constructTreeModel(gson),
         getVariables = { variablesTab.getActive() },
     )
 
@@ -105,6 +107,14 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
                 /* index = */ 1
             )
 
+            insertTab(
+                /* title = */ "Settings",
+                /* icon = */ AllIcons.General.Settings,
+                /* component = */ settingsTab.get(),
+                /* tip = */ "Settings",
+                /* index = */ 2
+            )
+
             // Used to prevent bug where dialog appears in smaller size
             // because header, body and output UI fail to occupy space
             minimumSize = Dimension(700, 700)
@@ -120,13 +130,10 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         super.doOKAction()
     }
 
-    private fun constructTreeModel(
-        gson: Gson,
-        rootDir: File,
-    ): DefaultTreeModel {
+    private fun constructTreeModel(gson: Gson): DefaultTreeModel {
         val root = DefaultMutableTreeNode()
 
-        val jsonFile = File(rootDir, Constants.FILE_API_DETAIL_PERSISTENT)
+        val jsonFile = File(ApiBankSettingsStateComponent.getInstance(project).state.requestFilePath)
         val jsonString = jsonFile.readText()
         val requestGroups: List<RequestGroup> = gson.fromJson(
             jsonString,
@@ -146,9 +153,25 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     }
 
     private fun save() {
-        persistentVariable.items.clear()
-        persistentVariable.items.addAll(modifiableVariable.map { it.copy() })
+        ApiBankSettingsStateComponent
+            .getInstance(project)
+            .loadState(
+                ApiBankSettingsState(
+                    requestFilePath = settingsTab.requestTextField.text,
+                    envFilePath = settingsTab.envTextField.text,
+                )
+            )
 
-        requestsTab.getModel().saveAsJsonFile(gson, rootFile)
+        saveEnvToJsonFile(
+            gson = gson,
+            project = project,
+            value = envVarCollection
+        )
+
+        requestsTab.getModel().saveAsJsonFile(
+            project = project,
+            gson = gson,
+            rootDir = File(ApiBankSettingsStateComponent.getInstance(project).state.requestFilePath)
+        )
     }
 }

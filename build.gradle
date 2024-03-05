@@ -36,7 +36,7 @@ dependencies {
 
 intellij {
     updateSinceUntilBuild = false
-    version.set("222.3739.54")
+    version.set("233.14475.28")
 }
 
 compileKotlin {

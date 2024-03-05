@@ -15,7 +15,7 @@
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
-    <idea-version since-build="222.3739.54"/>
+    <idea-version since-build="233.14475.28"/>
     <extensions defaultExtensionNs="com.intellij">
         <notificationGroup id="API Bank (Exception)" displayType="BALLOON"/>
         <notificationGroup id="API Bank (Warning)" displayType="BALLOON"/>

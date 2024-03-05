@@ -1,28 +1,19 @@
 package api.bank.services
 
-import api.bank.models.Constants.FILE_VARIABLE_COLLECTION_PERSISTENT
-import api.bank.models.VariableCollectionList
-import com.intellij.openapi.components.*
+import api.bank.models.VariableCollection
+import api.bank.settings.ApiBankSettingsStateComponent
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.intellij.openapi.project.Project
+import java.io.File
 
-@Service
-@State(
-    name = "variable_collection_persistent",
-    storages = [Storage(FILE_VARIABLE_COLLECTION_PERSISTENT)]
-)
-class VariableCollectionPersistentService : PersistentStateComponent<VariableCollectionList> {
+fun getEnvFromJson(gson: Gson, project: Project): ArrayList<VariableCollection> {
+    return gson.fromJson(
+        File(ApiBankSettingsStateComponent.getInstance(project).state.envFilePath).readText(),
+        object : TypeToken<ArrayList<VariableCollection>>() {}.type
+    )
+}
 
-    var collection: VariableCollectionList = VariableCollectionList(ArrayList())
-
-    override fun getState(): VariableCollectionList {
-        return collection
-    }
-
-    override fun loadState(variables: VariableCollectionList) {
-        this.collection = variables
-    }
-
-    companion object {
-        fun getInstance(project: Project): VariableCollectionPersistentService = project.service()
-    }
+fun saveEnvToJsonFile(gson: Gson, project: Project, value: List<VariableCollection>) {
+    File(ApiBankSettingsStateComponent.getInstance(project).state.envFilePath).writeText(gson.toJson(value))
 }

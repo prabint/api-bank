@@ -55,4 +55,10 @@
             </action>
         </group>
     </actions>
+
+    <projectListeners>
+        <listener
+            class="api.bank.services.ApiBankDynamicPluginListener"
+            topic="com.intellij.ide.plugins.DynamicPluginListener"/>
+    </projectListeners>
 </idea-plugin>

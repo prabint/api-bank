@@ -62,5 +62,5 @@ test {
 }
 
 patchPluginXml {
-    changeNotes = """Feature: Group requests"""
+    changeNotes = """Feature: Share location for requests and environment variable files"""
 }

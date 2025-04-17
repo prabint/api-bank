@@ -1,0 +1,24 @@
+[
+  {
+    "id": "76be8f81-5a18-4e00-9b27-3a45167d4b7a",
+    "name": "Staging",
+    "variableItems": [
+      [
+        "base_url",
+        "https://jsonplaceholder.typicode.com"
+      ]
+    ],
+    "isActive": true
+  },
+  {
+    "id": "4dad5c07-f062-408f-8879-a0c9331cd08d",
+    "name": "Production",
+    "variableItems": [
+      [
+        "base_url",
+        "https://jsonplaceholder.typicode.com"
+      ]
+    ],
+    "isActive": false
+  }
+]

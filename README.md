@@ -1,10 +1,13 @@
 # API Bank
 
+<!-- Plugin description -->
 A plugin to quickly make API requests in Intellij based IDE:
 
 * Create request using url, method, body and header in an editor dialog.
 * Create collections of environment variables, for e.g. development, production etc.
 * Quickly access and execute API requests via quick select popup.
+
+<!-- Plugin description end -->
 
 ## Installation
 ### Option 1
@@ -17,7 +20,7 @@ A plugin to quickly make API requests in Intellij based IDE:
 
 ### 1. Editor
 
-<img src="images/filled_form.png" height="600"/>
+<img alt="filled form" src="images/filled_form.png" height="600"/>
 
 1. Open the editor via ```Tools -> API Bank -> Request Editor``` or use hotkey ```alt+shift+e```(win) or```option+shift+e```(mac)
 2. Click the ```+``` icon on top-left
@@ -38,11 +41,11 @@ A plugin to quickly make API requests in Intellij based IDE:
 
 1. Create variables using Variables tab
 
-   <img src="images/envvar.png" height="150"/>
+   <img alt ="Environment variable" src="images/envvar.png" height="150"/>
 
 2. Use them in request
 
-   <img src="images/envvar_usage.png" height="350"/>
+   <img alt = "Environment variable" src="images/envvar_usage.png" height="350"/>
 
 #### Notes:
 
@@ -60,7 +63,7 @@ A plugin to quickly make API requests in Intellij based IDE:
 2. Select a request to execute
 3. A notification bubble will show up displaying the response code and message.
 
-<img src="images/popup.png" height="80"/>
+<img alt="Popup" src="images/popup.png" height="80"/>
 
 ## License
 

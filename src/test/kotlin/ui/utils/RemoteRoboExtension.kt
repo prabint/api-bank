@@ -21,7 +21,6 @@ import javax.imageio.ImageIO
  */
 class RemoteRobotExtension : AfterTestExecutionCallback, ParameterResolver {
     private val url: String = System.getProperty("remote-robot-url") ?: "http://127.0.0.1:8082"
-
     private val remoteRobot: RemoteRobot = if (System.getProperty("debug-retrofit")?.equals("enable") == true) {
         val interceptor: HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
             this.level = HttpLoggingInterceptor.Level.BODY
@@ -33,7 +32,6 @@ class RemoteRobotExtension : AfterTestExecutionCallback, ParameterResolver {
     } else {
         RemoteRobot(url)
     }
-
     private val client = OkHttpClient()
 
     override fun supportsParameter(parameterContext: ParameterContext?, extensionContext: ExtensionContext?): Boolean {
@@ -49,7 +47,7 @@ class RemoteRobotExtension : AfterTestExecutionCallback, ParameterResolver {
         val testMethodName = testMethod.name
         val testFailed: Boolean = context.executionException?.isPresent ?: false
         if (testFailed) {
-            // saveScreenshot(testMethodName)
+//            saveScreenshot(testMethodName)
             saveIdeaFrames(testMethodName)
             saveHierarchy(testMethodName)
         }
@@ -103,7 +101,7 @@ class RemoteRobotExtension : AfterTestExecutionCallback, ParameterResolver {
                         } finally {
                           baos.close();
                         }
-                        pictureBytes;
+                        pictureBytes;   
             """, true
                 )
             } catch (e: Throwable) {

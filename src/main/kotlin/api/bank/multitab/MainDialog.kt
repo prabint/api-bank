@@ -12,9 +12,11 @@ import api.bank.utils.listener.SimpleWindowListener
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBTabbedPane
+import com.intellij.util.ui.JBUI
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.GlobalContext
@@ -37,8 +39,10 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     }
 
     private val gson: Gson by inject()
+    private val logger: Logger by inject()
     private val coreRepository: CoreRepository by inject()
     private val dispatchProvider: DispatcherProvider by inject()
+    private val persistentStateComponent = ApiBankSettingsPersistentStateComponent.getInstance(project)
 
     init {
         migrateEnvVarXmlJson(project, gson)
@@ -53,7 +57,12 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
 
     private val envVarCollection = getVariableCollectionFromJson(gson, project)
 
-    private val settingsTab = SettingsTab(project) {
+    private val settingsTab = SettingsTab(
+        project = project,
+        gson = gson,
+        logger = logger,
+        settings = persistentStateComponent,
+    ) {
         save()
         close(0, true)
     }

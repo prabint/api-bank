@@ -2,10 +2,7 @@ package ui.frames
 
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.data.RemoteComponent
-import com.intellij.remoterobot.fixtures.CommonContainerFixture
-import com.intellij.remoterobot.fixtures.DefaultXpath
-import com.intellij.remoterobot.fixtures.FixtureName
-import com.intellij.remoterobot.fixtures.JTableFixture
+import com.intellij.remoterobot.fixtures.*
 import com.intellij.remoterobot.search.locators.byXpath
 import java.time.Duration
 
@@ -23,19 +20,35 @@ class RequestsTabFrame(
         get() = jLabel("Requests")
 
     val requestsList
-        get() = jList(byXpath("//div[@accessiblename='Requests list']"))
+        get() = find(
+            JTreeFixture::class.java,
+            byXpath("//div[@class='Tree']")
+        )
 
     val addNewRequestButton
         get() = button(byXpath("//div[@accessiblename='Add new request']"))
 
+    val addNewGroupPopUpButton
+        get() = button(byXpath("//div[@class='JBMenuItem']"))
+
     val cloneRequestButton
-        get() = button(byXpath("//div[@accessiblename='Clone request']"))
+        get() = button(byXpath("//div[@myicon='copy.svg']"))
+
+    // textField(...) not working for dialogs
+    val groupNameField
+        get() = remoteRobot.find(
+            JTextFieldFixture::class.java,
+            byXpath("//div[@class='JTextField']")
+        )
+
+    val okButton
+        get() = remoteRobot.find(
+            JButtonFixture::class.java,
+            byXpath("//div[@text='OK']")
+        )
 
     val nameField
         get() = textField(byXpath("//div[@accessiblename='Request name']"))
-
-    val searchField
-        get() = textField(byXpath("//div[@accessiblename='Search field']"))
 
     val executeButton
         get() = button(byXpath("//div[@accessiblename='Execute api']"))

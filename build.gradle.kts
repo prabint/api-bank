@@ -58,6 +58,7 @@ dependencies {
     testImplementation(libs.junit.jupiter.api)
     testRuntimeOnly(libs.junit.jupiter.engine)
     testRuntimeOnly(libs.junit.vintage.engine)
+    testImplementation(libs.kotlin.test)
 }
 
 // Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
@@ -127,6 +128,10 @@ changelog {
 }
 
 tasks {
+    test {
+        useJUnitPlatform()
+    }
+
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
@@ -151,7 +156,7 @@ intellijPlatformTesting {
                         "-Dapple.laf.useScreenMenuBar=false",
                         "-Didea.trust.all.projects=true",
                         "-Dide.show.tips.on.startup.default.value=false",
-                        // For attaching debugger
+                        // For attaching debugger if running ui test via cmd
                         // "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
                     )
                 }

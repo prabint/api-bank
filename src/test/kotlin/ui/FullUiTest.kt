@@ -3,6 +3,7 @@ package ui
 import api.bank.models.Constants.COLOR_GREEN
 import api.bank.utils.toVariableRepresentation
 import com.intellij.remoterobot.RemoteRobot
+import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.JButtonFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.utils.keyboard
@@ -27,8 +28,6 @@ import java.awt.event.KeyEvent
 import java.time.Duration.ofSeconds
 
 /**
- * TODO: Update
- *
  * To run the test:
  * 1. ./gradlew clean && ./gradlew runIdeForUiTests & ./gradlew test --tests "FullUiTest.verify requests and variables data"
  * 2. Sit back and let the test complete
@@ -50,14 +49,7 @@ class FullUiTest {
             emptyProjectButton.click()
             projectNameFiled.text = ""
             projectNameFiled.text = "api-bank-ui-test"
-            finishButton.click()
-
-            try {
-                while (fileAlreadyExistLabel.isVisible()) {
-                    yesButton.click()
-                }
-            } catch (ignore: Exception) {
-            }
+            createButton.click()
         }
 
         idea {
@@ -79,11 +71,16 @@ class FullUiTest {
         requestsTabFrame {
             tab.click()
             addNewRequestButton.click()
+            addNewGroupPopUpButton.click()
+
+            groupNameField.text = "Group 1"
+            okButton.click()
 
             nameField.text = "Create user"
             methodField.selectItem("POST")
 
-            assertEquals("[POST] Create user", requestsList.collectItems()[0])
+            assertEquals("Group 1", requestsList.collectRows()[0])
+            assertEquals("[POST] Create user", requestsList.collectRows()[1])
 
             urlField.text = "${varBaseUrl.toVariableRepresentation()}/posts"
 
@@ -99,7 +96,10 @@ class FullUiTest {
             verifyOutput(this)
         }
 
-        find(JButtonFixture::class.java, byXpath("//div[@text='Save']")).click()
+        find(
+            JButtonFixture::class.java,
+            byXpath("//div[@text='Save']")
+        ).click()
 
         // Test quick select popup
         showQuickSelectPopup(this)
@@ -112,7 +112,7 @@ class FullUiTest {
 
         // Verify all data in editor is retained and valid
         requestsTabFrame {
-            assertEquals("[POST] Create user", requestsList.collectItems()[0])
+            assertEquals("[POST] Create user", requestsList.collectRows()[1])
             assertEquals("Create user", nameField.text)
             assertEquals("POST", methodField.selectedText())
             assertEquals("${varBaseUrl.toVariableRepresentation()}/posts", urlField.text)
@@ -137,11 +137,16 @@ class FullUiTest {
             cloneRequestButton.click()
             nameField.text = "Get All Data"
 
-            // Search
-            searchField.click()
-            keyboard { enterText("all", 0) }
-            assertEquals(requestsList.collectItems().size, 1)
-            assertEquals("[POST] Get All Data", requestsList.collectItems()[0])
+            // Quick search
+            requestsList.clickRow(1)
+            assertEquals("Create user", nameField.text)
+            keyboard { enterText("all") }
+            // Verify filtered item auto selected upon quick search
+            assertEquals("Get All Data", nameField.text)
+            find(
+                ComponentFixture::class.java,
+                byXpath("//div[@class='SearchField']")
+            ).hasText("all")
         }
 
         find(JButtonFixture::class.java, byXpath("//div[@text='Save']")).click()

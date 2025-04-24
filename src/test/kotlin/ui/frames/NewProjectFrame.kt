@@ -22,14 +22,8 @@ class NewProjectFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent
         get() = findText("Empty Project")
 
     val projectNameFiled
-        get() = textField(byXpath("//div[@accessiblename='Project name:' and @accessiblename.key='label.project.name' and @class='JTextField']"))
+        get() = textField(byXpath("//div[@class='JBTextField']"))
 
-    val finishButton
-        get() = button(byXpath("//div[@text.key='button.finish']"))
-
-    val fileAlreadyExistLabel
-        get() = jLabel(byXpath("//div[@visible_text='File Already Exists']"))
-
-    val yesButton
-        get() = button(byXpath("//div[@text.key='button.yes']"))
+    val createButton
+        get() = button(byXpath("//div[@text='Create']"))
 }

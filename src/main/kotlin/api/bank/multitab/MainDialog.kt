@@ -85,6 +85,9 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
 
     override fun createCenterPanel(): JComponent {
         return JBTabbedPane().apply {
+            // Fixes UI bug in intellij where inset is too big
+            tabComponentInsets = JBUI.emptyInsets()
+
             insertTab(
                 /* title = */ "Requests",
                 /* icon = */ AllIcons.Ide.UpDown,

@@ -190,7 +190,6 @@ class RequestsTab(
             },
             minWidth = 180,
             bottomComponent = JBScrollPane(tree),
-            onSearch = null,
         )
     }
 

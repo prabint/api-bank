@@ -164,7 +164,6 @@ class VariablesTab(
                     addListSelectionListener(listSelectionListener)
                     addMouseListener(listMouseAdapter)
                 }),
-                onSearch = null
             ), gbc
         )
 
@@ -236,7 +235,6 @@ class VariablesTab(
                 },
                 minWidth = 350,
                 bottomComponent = JBScrollPane(jTable),
-                onSearch = null
             ), gbc
         )
 

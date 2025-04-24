@@ -289,7 +289,6 @@ class EditorTab(
             createActionButton("Remove", AllIcons.General.Remove) { onDeleteRowClicked() },
             minWidth = 350,
             bottomComponent = JBScrollPane(jHeader),
-            onSearch = null,
         )
     }
 

@@ -19,6 +19,7 @@ import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
+import com.intellij.util.ui.JBUI
 import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -139,6 +140,8 @@ class VariablesTab(
                             )
 
                             else -> JBLabel("${value?.name}")
+                        }.apply {
+                            border = JBUI.Borders.emptyLeft(4)
                         }
                     }
                     fixedCellHeight = 25

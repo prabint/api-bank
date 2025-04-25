@@ -17,6 +17,7 @@ import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
@@ -25,12 +26,14 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
-import java.awt.Component
-import java.awt.Dimension
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
+import java.awt.*
+import java.awt.Cursor.getPredefinedCursor
 import java.awt.event.ActionEvent
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.*
+import javax.swing.border.CompoundBorder
+import javax.swing.border.LineBorder
 import javax.swing.event.DocumentEvent
 import javax.swing.table.DefaultTableModel
 import javax.swing.text.DefaultCaret
@@ -53,6 +56,7 @@ class EditorTab(
     private lateinit var jBody: JBTextArea
     private lateinit var jOutput: JBTextArea
     private lateinit var jOutputLabel: JBLabel
+    private lateinit var jResponseHeader: JBTable
 
     // Data
     private val headerTableModel = DefaultTableModel()
@@ -154,7 +158,7 @@ class EditorTab(
         gbc.gridx = 0
         gbc.gridy = 3
         gbc.anchor = GridBagConstraints.NORTHWEST
-        upperPanel.add(JBLabel("Header"), gbc)
+        upperPanel.add(JBLabel("Request header"), gbc)
 
         gbc.gridx = 0
         gbc.gridy = 4
@@ -178,13 +182,13 @@ class EditorTab(
     private fun setUpBodyAndOutputPanel(): JBSplitter {
         val bodyPanel = JPanel()
         bodyPanel.layout = BoxLayout(bodyPanel, BoxLayout.Y_AXIS)
-        bodyPanel.add(JBLabel("Body").apply {
+        bodyPanel.add(JBLabel("Request body").apply {
             border = BorderFactory.createEmptyBorder(0, 0, 6, 0)
         })
 
         JBTextArea(1, 15).apply {
             jBody = this
-            accessibleContext.accessibleName = "Request body"
+            accessibleContext.accessibleName = "Request body text area"
             tabSize = 2
             font = monoSpacedFont
             text = requestDetailInMemory.body
@@ -214,14 +218,6 @@ class EditorTab(
             alignmentX = Component.LEFT_ALIGNMENT
         })
 
-        val outputPanel = JPanel()
-        outputPanel.layout = BoxLayout(outputPanel, BoxLayout.Y_AXIS)
-        outputPanel.add(JBLabel("Output").apply {
-            jOutputLabel = this
-            accessibleContext.accessibleName = "Request output label"
-            border = BorderFactory.createEmptyBorder(0, 0, 6, 0)
-        })
-
         JBTextArea(1, 15).apply {
             jOutput = this
             accessibleContext.accessibleName = "Request output"
@@ -232,6 +228,16 @@ class EditorTab(
             border = BorderFactory.createEmptyBorder(5, 5, 5, 5)
         }
 
+        return JBSplitter(true, 0.5f).apply {
+            firstComponent = bodyPanel
+            secondComponent = tabbedBodyAndHeaderPanel()
+        }
+    }
+
+    /**
+     * Similar to JBTabbedPane, except, the tab headers are small
+     */
+    fun tabbedBodyAndHeaderPanel(): JPanel {
         val outputWithController = createPanelWithLeftControls(
             createToggleButton("Wrap", AllIcons.Actions.ToggleSoftWrap) {
                 jOutput.wrapStyleWord = it
@@ -241,13 +247,66 @@ class EditorTab(
             bottomComponent = JBScrollPane(jOutput)
         )
 
-        outputPanel.add(outputWithController.apply {
-            alignmentX = Component.LEFT_ALIGNMENT
-        })
+        val cardLayout = CardLayout()
+        val cardPanel = JPanel(cardLayout).apply {
+            add(outputWithController, "_body")
+            add(setUpResponseHeaderTable(), "_header")
+        }
 
-        return JBSplitter(true, 0.5f).apply {
-            firstComponent = bodyPanel
-            secondComponent = outputPanel
+        val bodyLabel = JBLabel("Body")
+        val headerLabel = JBLabel("Header")
+
+        bodyLabel.apply {
+            cursor = getPredefinedCursor(Cursor.HAND_CURSOR)
+            foreground = JBColor.blue
+            border = BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor(Color.DARK_GRAY, Color.GRAY))
+            addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent?) {
+                    cardLayout.show(cardPanel, "_body")
+                    // Swap border based on selected tab
+                    headerLabel.border = null
+                    border = BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor(Color.DARK_GRAY, Color.GRAY))
+                }
+            })
+        }
+
+        headerLabel.apply {
+            cursor = getPredefinedCursor(Cursor.HAND_CURSOR)
+            foreground = JBColor.blue
+            addMouseListener(object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent?) {
+                    cardLayout.show(cardPanel, "_header")
+                    // Swap border based on selected tab
+                    bodyLabel.border = null
+                    border = BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor(Color.DARK_GRAY, Color.GRAY))
+
+                }
+            })
+        }
+
+        JBLabel().apply {
+            jOutputLabel = this
+            accessibleContext.accessibleName = "Request output label"
+
+            // Set these value so that jOutputLabel is properly pushed to right-end
+            minimumSize = Dimension(200, preferredSize.height)
+            preferredSize = Dimension(200, preferredSize.height)
+            horizontalAlignment = SwingConstants.RIGHT
+        }
+
+        val headerPanel = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            add(bodyLabel)
+            add(Box.createHorizontalStrut(10))
+            add(headerLabel)
+            add(Box.createHorizontalGlue())
+            add(jOutputLabel)
+            add(Box.createHorizontalStrut(6))
+        }
+
+        return JPanel(BorderLayout()).apply {
+            add(headerPanel, BorderLayout.NORTH)
+            add(cardPanel, BorderLayout.CENTER)
         }
     }
 
@@ -290,6 +349,29 @@ class EditorTab(
             minWidth = 350,
             bottomComponent = JBScrollPane(jHeader),
         )
+    }
+
+    private fun setUpResponseHeaderTable(): JBScrollPane {
+        return JBScrollPane(
+            JBTable(DefaultTableModel(arrayOf("Key", "Value"), 0)).apply {
+                jResponseHeader = this
+                columnModel.getColumn(0).minWidth = 80
+                columnModel.getColumn(1).minWidth = 300
+                autoResizeMode = JBTable.AUTO_RESIZE_OFF
+                TableColumnAdjuster(this, 10).apply {
+                    adjustColumns()
+                    setDynamicAdjustment(true)
+                    setOnlyAdjustLarger(true)
+                    setColumnHeaderIncluded(true)
+                    setColumnDataIncluded(true)
+                }
+            }
+        ).apply {
+            border = CompoundBorder(
+                JBUI.Borders.empty(3),
+                LineBorder(JBColor.border(), 1),
+            )
+        }
     }
 
     private fun onAddRowClicked() {
@@ -393,14 +475,14 @@ class EditorTab(
     }
 
     internal fun onRunClicked() {
-        jOutputLabel.text = "Loading..."
+        jOutputLabel.text = "[Loading...]"
 
         networkJob?.cancel()
         networkJob = uiScope.launch(CoroutineExceptionHandler { _, e ->
             jOutput.text = "${e.message}\n${e.stackTraceToString()}"
-            jOutputLabel.text = "<html><font color='red'>Exception</font></html>"
+            jOutputLabel.text = "<html><font color='red'>[Exception]</font></html>"
         }) {
-            jOutput.text = "Loading..."
+            jOutput.text = "[Loading...]"
 
             val output = coreRepository.executeRequest(
                 requestDetail = requestDetailInMemory,
@@ -414,7 +496,7 @@ class EditorTab(
                 false -> COLOR_RED
             }
 
-            jOutputLabel.text = "<html><font color='$color'>${output.code}</font> ${output.message}</html>"
+            jOutputLabel.text = "<html><font color='$color'>[${output.code}</font> ${output.message}]</html>"
         }
     }
 
@@ -430,5 +512,13 @@ class EditorTab(
                 outputBody
             }
         }
+
+        // Populate response header table
+        val model = DefaultTableModel(arrayOf("Key", "Value"), 0)
+        for ((key, values) in output.responseHeaders) {
+            model.addRow(arrayOf(key, values))
+        }
+        jResponseHeader.model = model
+        model.fireTableDataChanged()
     }
 }

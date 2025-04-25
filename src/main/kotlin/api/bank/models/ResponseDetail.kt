@@ -7,4 +7,5 @@ data class ResponseDetail(
     val body: String?,
     val code: Int,
     val message: String,
+    val responseHeaders: Map<String, List<String>>,
 )

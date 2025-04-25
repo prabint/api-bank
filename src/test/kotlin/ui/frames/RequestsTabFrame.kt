@@ -69,7 +69,7 @@ class RequestsTabFrame(
         get() = button(byXpath("//div[@accessiblename='Format body']"))
 
     val bodyField
-        get() = textField(byXpath("//div[@accessiblename='Request body']"))
+        get() = textField(byXpath("//div[@accessiblename='Request body text area']"))
 
     val outputLabel
         get() = jLabel(byXpath("//div[@accessiblename='Request output label']"))

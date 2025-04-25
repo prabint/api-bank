@@ -168,7 +168,7 @@ class FullUiTest {
 
     private fun verifyOutput(requestsTabFrame: RequestsTabFrame) {
         waitFor(ofSeconds(5)) {
-            requestsTabFrame.outputLabel.value == "<html><font color='${COLOR_GREEN}'>201</font> Created</html>"
+            requestsTabFrame.outputLabel.value == "<html><font color='${COLOR_GREEN}'>[201</font> Created]</html>"
         }
 
         val lines = requestsTabFrame.outputField.text.lines()

@@ -37,14 +37,24 @@ class DefaultCoreRepository(
                         val body = urlConnection.errorStream?.let { inputStream ->
                             inputStream.bufferedReader().use { reader -> reader.readText() }
                         }
-                        ResponseDetail(body, urlConnection.responseCode, urlConnection.responseMessage)
+                        ResponseDetail(
+                            body = body,
+                            code = urlConnection.responseCode,
+                            message = urlConnection.responseMessage,
+                            responseHeaders = urlConnection.headerFields,
+                        )
                     }
 
                     else -> {
                         val body = urlConnection.inputStream?.let { inputStream ->
                             inputStream.bufferedReader().use { reader -> reader.readText() }
                         }
-                        ResponseDetail(body, urlConnection.responseCode, urlConnection.responseMessage)
+                        ResponseDetail(
+                            body = body,
+                            code = urlConnection.responseCode,
+                            message = urlConnection.responseMessage,
+                            responseHeaders = urlConnection.headerFields,
+                        )
                     }
                 }
             } finally {

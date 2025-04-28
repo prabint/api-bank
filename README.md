@@ -27,7 +27,7 @@ A plugin to quickly make API requests in Intellij based IDE:
 3. Enter your request details, e.g.
     1. Name: ```Create User```
     2. Method: ```POST```
-    3. Url: ```https://jsonplaceholder.typicode.com```
+   3. Url: ```https://jsonplaceholder.typicode.com/posts```
     4. Body: ``` {
        "title": "Hello",
        "body": "World!",
@@ -41,11 +41,11 @@ A plugin to quickly make API requests in Intellij based IDE:
 
 1. Create variables using Variables tab
 
-   <img alt ="Environment variable" src="images/envvar.png" height="150"/>
+   <img alt ="Environment variable" src="images/envvar.png" height="600"/>
 
 2. Use them in request
 
-   <img alt = "Environment variable" src="images/envvar_usage.png" height="350"/>
+   <img alt = "Environment variable" src="images/envvar_usage.png" height="600"/>
 
 #### Notes:
 
@@ -63,14 +63,24 @@ A plugin to quickly make API requests in Intellij based IDE:
 2. Select a request to execute
 3. A notification bubble will show up displaying the response code and message.
 
-<img alt="Popup" src="images/popup.png" height="80"/>
+<img alt="Popup" src="images/popup.png" height="200"/>
+
+### 4. Settings
+
+By default, the request and environment files are saved in current project's `.idea` folder.
+
+If you use multiple IDE
+instances and need to share the same api requests, you can copy the files `.idea/api_detail_persistent.json` and
+`.idea/variable_collection_persistent.json` to a folder common to all IDE instances such as `/User/apk-bank-collecion`.
+
+<img alt="Popup" src="images/settings.png" height="600"/>
 
 ## License
 
 ```
 MIT License
 
-Copyright (c) [2022] [Prabin Timsina]
+Copyright (c) [2025] [Prabin Timsina]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

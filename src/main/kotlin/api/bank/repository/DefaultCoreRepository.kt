@@ -7,7 +7,7 @@ import api.bank.utils.toVariableRepresentation
 import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Single
 import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
 import java.util.*
 
 @Single
@@ -21,7 +21,7 @@ class DefaultCoreRepository(
     ): ResponseDetail {
         return withContext(dispatcherProvider.io) {
             val updatedDetail = substituteVariables(requestDetail, variables)
-            val urlConnection: HttpURLConnection = URL(updatedDetail.url).openConnection() as HttpURLConnection
+            val urlConnection: HttpURLConnection = URI(updatedDetail.url).toURL().openConnection() as HttpURLConnection
 
             return@withContext try {
                 urlConnection.requestMethod = updatedDetail.method

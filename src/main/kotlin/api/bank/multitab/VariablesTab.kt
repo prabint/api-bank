@@ -149,7 +149,7 @@ class VariablesTab(
 
                     // Initially select first item in the list if available
                     if (!listModel.isEmpty) {
-                        selectedIndex = 0
+                        selectedIndex = getActiveIndex()
                     }
 
                     // Setup DnD
@@ -192,7 +192,7 @@ class VariablesTab(
 
             // Set initial value
             if (!listModel.isEmpty) {
-                text = listModel.get(0).name
+                text = listModel.get(getActiveIndex()).name
             }
 
             document.addDocumentListener(displayNameSimpleDocumentListener)
@@ -398,6 +398,11 @@ class VariablesTab(
 
         jList.selectedIndex = 0
     }
+
+    private fun getActiveIndex() = listModel
+        .elements()
+        .toList()
+        .indexOfFirst { it.isActive == true }
 
     companion object {
         private val LIST_DATA_FLAVOR = DataFlavor(

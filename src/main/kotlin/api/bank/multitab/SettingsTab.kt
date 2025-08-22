@@ -29,7 +29,7 @@ class SettingsTab(
 ) {
     internal val requestTextField = JBTextField(settings.state.requestFilePath).apply { isEnabled = false }
     internal val envTextField = JBTextField(settings.state.envFilePath).apply { isEnabled = false }
-    private val fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(".json")
+    private val fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor("json")
 
     private val requestGroupErrorLabel = JBLabel().apply {
         foreground = JBColor.RED

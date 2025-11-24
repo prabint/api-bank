@@ -1,3 +1,10 @@
+## 1.0.7
+
+### Added
+
+- Bugfix: File browser issue resolved
+- Feature: Auto select active environment list item
+
 ## 1.0.6
 
 ### Added

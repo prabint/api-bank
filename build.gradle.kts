@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin)
     alias(libs.plugins.intelliJPlatform)
     alias(libs.plugins.changelog)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -48,6 +49,7 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.swing)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.logging.interceptor)

@@ -3,6 +3,7 @@ package api.bank.multitab
 import api.bank.list.ListTransferHandler
 import api.bank.list.toListOfKeyValue
 import api.bank.models.VariableCollection
+import api.bank.models.VariableDetail
 import api.bank.table.TableCellListener
 import api.bank.table.TableColumnAdjuster
 import api.bank.utils.createActionButton
@@ -36,16 +37,16 @@ import javax.swing.table.DefaultTableModel
  * UI that has list of variable collection on the left and table on the right
  */
 class VariablesTab(
-    private val collectionsInMemory: ArrayList<VariableCollection>,
+    private val collectionsInMemory: ArrayList<VariableDetail>,
     private val gson: Gson,
 ) {
     private lateinit var jTable: JBTable
     private lateinit var jbSplitter: JBSplitter
     private lateinit var jDisplayName: JBTextField
-    private lateinit var jList: JBList<VariableCollection>
+    private lateinit var jList: JBList<VariableDetail>
 
     private val tableModel = DefaultTableModel()
-    private val listModel = DefaultListModel<VariableCollection>()
+    private val listModel = DefaultListModel<VariableDetail>()
 
     fun getActive() = collectionsInMemory.find { it.isActive == true }?.variableItems ?: arrayListOf()
 
@@ -126,7 +127,7 @@ class VariablesTab(
                 createActionButton("Clone", AllIcons.Actions.Copy) { onCloneListItemClicked() },
                 createActionButton("Set Active", AllIcons.Actions.SetDefault) { onSetActiveClicked() },
                 minWidth = 250,
-                bottomComponent = JBScrollPane(JBList<VariableCollection>().apply {
+                bottomComponent = JBScrollPane(JBList<VariableDetail>().apply {
                     jList = this
                     model = listModel
                     listModel.addAll(collectionsInMemory)
@@ -282,7 +283,7 @@ class VariablesTab(
         jTable.columnModel.getColumn(1).minWidth = 300
     }
 
-    private fun setUpPopUpMenu(list: JBList<VariableCollection>, e: MouseEvent) {
+    private fun setUpPopUpMenu(list: JBList<VariableDetail>, e: MouseEvent) {
         val menu = JPopupMenu()
 
         val clone = JMenuItem("Clone", AllIcons.Actions.Copy).apply {
@@ -345,7 +346,7 @@ class VariablesTab(
     }
 
     private fun onAddNewListItemClicked() {
-        val dummy = VariableCollection(
+        val dummy = VariableDetail(
             id = UUID.randomUUID().toString(),
             name = "(New set of variables)",
             variableItems = ArrayList(),
@@ -387,7 +388,7 @@ class VariablesTab(
         if (selectedIndex == -1) return
 
         val selectedItem = jList.selectedValue
-        val clone = gson.fromJson(gson.toJson(selectedItem), VariableCollection::class.java).apply {
+        val clone = gson.fromJson(gson.toJson(selectedItem), VariableDetail::class.java).apply {
             id = UUID.randomUUID().toString()
             name = "Copy of ${selectedItem.name}"
             isActive = false

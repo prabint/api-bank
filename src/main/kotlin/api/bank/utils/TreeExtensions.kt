@@ -1,12 +1,12 @@
 package api.bank.utils
 
+import api.bank.models.RequestCollection
 import api.bank.models.RequestDetail
 import api.bank.models.RequestGroup
-import api.bank.settings.ApiBankSettingsPersistentStateComponent
-import com.google.gson.Gson
 import com.intellij.openapi.project.Project
 import com.intellij.ui.treeStructure.Tree
-import java.io.File
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeModel
 import javax.swing.tree.TreeNode
@@ -51,8 +51,12 @@ fun TreeModel.toGroupList(): List<RequestGroup> {
     return groupList
 }
 
-fun TreeModel.saveRequestsAsJsonFile(project: Project, gson: Gson) {
-    File(ApiBankSettingsPersistentStateComponent.getInstance(project).state.requestFilePath).writeText(gson.toJson(toGroupList()))
+fun TreeModel.saveRequestsAsJsonFile(project: Project, json: Json) {
+    val collection = RequestCollection(
+        schemaVersion = SUPPORTED_SCHEMA_VERSION,
+        data = ArrayList(toGroupList()),
+    )
+    getRequestsFile(project).writeText(json.encodeToString<RequestCollection>(collection))
 }
 
 fun Tree.expandTree() {

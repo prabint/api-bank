@@ -161,7 +161,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
 
     private fun save() {
         saveVariableCollectionAsJsonFile(json = json, project = project, value = envVarCollection)
-        requestsTab.getModel().saveRequestsAsJsonFile(project = project, gson = gson)
+        requestsTab.getModel().saveRequestsAsJsonFile(project = project, json = json)
 
         // Must be last
         ApiBankSettingsPersistentStateComponent

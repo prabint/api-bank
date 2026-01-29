@@ -7,7 +7,7 @@ import api.bank.notification.notifyException
 import api.bank.repository.CoreRepository
 import api.bank.settings.ApiBankSettingsPersistentStateComponent
 import api.bank.settings.ApiBankSettingsState
-import api.bank.utils.*
+import api.bank.utils.FileManager
 import api.bank.utils.dispatcher.DispatcherProvider
 import api.bank.utils.listener.SimpleWindowListener
 import com.google.gson.Gson
@@ -22,6 +22,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.GlobalContext
 import org.koin.core.context.stopKoin
+import org.koin.core.parameter.parametersOf
 import java.awt.Dimension
 import java.awt.event.ActionEvent
 import java.awt.event.WindowEvent
@@ -41,12 +42,13 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     private val gson: Gson by inject()
     private val json: Json by inject()
     private val logger: Logger by inject()
+    private val fileManager: FileManager by inject { parametersOf(project) }
     private val coreRepository: CoreRepository by inject()
     private val dispatchProvider: DispatcherProvider by inject()
     private val persistentStateComponent = ApiBankSettingsPersistentStateComponent.getInstance(project)
 
     init {
-        migrate(project, json)
+        fileManager.migrateAll()
     }
 
     private val applyAction = object : AbstractAction("Apply") {
@@ -55,7 +57,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         }
     }
 
-    private val envVarCollection = getVariableCollectionFromJson(json, project)
+    private val envVarCollection = fileManager.getVariableCollectionFromJson()
 
     private val settingsTab = SettingsTab(
         project = project,
@@ -139,7 +141,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     private fun constructTreeModel(gson: Gson): DefaultTreeModel {
         val root = DefaultMutableTreeNode()
 
-        val jsonFile = getRequestsFile(project)
+        val jsonFile = fileManager.getRequestsFile()
         val jsonString = jsonFile.readText()
 
         try {
@@ -160,8 +162,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     }
 
     private fun save() {
-        saveVariableCollectionAsJsonFile(json = json, project = project, value = envVarCollection)
-        requestsTab.getModel().saveRequestsAsJsonFile(project = project, json = json)
+        fileManager.save(envVarCollection, requestsTab.getModel())
 
         // Must be last
         ApiBankSettingsPersistentStateComponent

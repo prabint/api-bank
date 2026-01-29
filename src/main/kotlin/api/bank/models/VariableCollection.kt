@@ -1,7 +1,8 @@
 package api.bank.models
 
-import api.bank.utils.JSON_KEY_DATA
-import api.bank.utils.JSON_KEY_SCHEMA_VERSION
+import api.bank.utils.FileManager.Companion.JSON_KEY_DATA
+import api.bank.utils.FileManager.Companion.JSON_KEY_SCHEMA_VERSION
+import api.bank.utils.FileManager.Companion.SUPPORTED_SCHEMA_VERSION
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -11,7 +12,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class VariableCollection(
     @SerialName(JSON_KEY_SCHEMA_VERSION)
-    val schemaVersion: Int = 0,
+    val schemaVersion: Int = SUPPORTED_SCHEMA_VERSION,
 
     @SerialName(JSON_KEY_DATA)
     val data: ArrayList<VariableDetail> = ArrayList(),

@@ -42,7 +42,6 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
     }
 
-    implementation(libs.gson)
     implementation(libs.json)
     implementation(libs.koin.core)
     implementation(libs.koin.annotations)
@@ -51,6 +50,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.kotlinx.serialization.json)
 
+    testImplementation(libs.mockk)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.logging.interceptor)
     testImplementation(libs.remote.robot)

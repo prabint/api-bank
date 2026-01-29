@@ -1,45 +1,32 @@
 package api.bank.quick
 
 import api.bank.actions.ShowEditorDialogAction
-import api.bank.models.RequestDetail
-import api.bank.models.VariableCollection
 import api.bank.modules.pluginModule
 import api.bank.notification.notifyException
 import api.bank.notification.notifySuccess
 import api.bank.notification.notifyWarning
 import api.bank.repository.CoreRepository
-import api.bank.utils.getRequestDetailsFromJson
-import api.bank.utils.getVariableCollectionFromJson
-import api.bank.utils.migrate
+import api.bank.utils.FileManager
 import com.intellij.ide.actions.QuickSwitchSchemeAction
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.*
-import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
 import org.koin.core.component.inject
 import org.koin.core.context.GlobalContext
 
 class QuickSelect : QuickSwitchSchemeAction(), KoinComponent {
 
     private val coreRepository: CoreRepository by inject()
-    private val json: Json by inject()
-
-    private fun getRequests(project: Project): List<RequestDetail> {
-        migrate(project, json)
-        return getRequestDetailsFromJson(json, project)
-    }
-
-    private fun getEnvVar(project: Project): VariableCollection {
-        migrate(project, json)
-        return getVariableCollectionFromJson(json, project)
-    }
 
     override fun fillActions(project: Project, group: DefaultActionGroup, dataContext: DataContext) {
         GlobalContext.getOrNull() ?: GlobalContext.startKoin { modules(pluginModule) }
 
-        val requests = getRequests(project)
-        val envVars = getEnvVar(project).data
+        val fileManager = FileManager(project, get(), get())
+        fileManager.migrateAll()
+        val requests = fileManager.getRequestDetailsFromJson().data.flatMap { it.requests }
+        val envVars = fileManager.getVariableCollectionFromJson().data
 
         for (item in requests) {
             group.add(object : AnAction(item.name) {

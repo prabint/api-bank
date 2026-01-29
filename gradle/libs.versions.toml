@@ -6,9 +6,9 @@ changelog = "2.2.1"
 intelliJPlatform = "2.5.0"
 kotlin = "2.1.20"
 serialization = "1.7.3"
+mockk = "1.14.9"
 
 [libraries]
-gson = { group = "com.google.code.gson", name = "gson", version = "2.13.0" }
 json = { group = "org.json", name = "json", version = "20250107" }
 koin-core = { group = "io.insert-koin", name = "koin-core", version = "4.0.4" }
 koin-annotations = { group = "io.insert-koin", name = "koin-annotations", version = "2.0.1-Beta1" }
@@ -21,7 +21,7 @@ mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", versio
 logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version = "5.0.0-alpha.14" }
 remote-robot = { group = "com.intellij.remoterobot", name = "remote-robot", version.ref = "remote-robot" }
 remote-fixtures = { group = "com.intellij.remoterobot", name = "remote-fixtures", version.ref = "remote-robot" }
-
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "1.13.0-M2" }
 junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junit" }
 junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junit" }

@@ -1,7 +1,7 @@
 package api.bank.models
 
-import api.bank.utils.JSON_KEY_DATA
-import api.bank.utils.JSON_KEY_SCHEMA_VERSION
+import api.bank.utils.FileManager.Companion.JSON_KEY_DATA
+import api.bank.utils.FileManager.Companion.JSON_KEY_SCHEMA_VERSION
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.*

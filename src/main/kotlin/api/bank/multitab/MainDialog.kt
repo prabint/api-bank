@@ -12,6 +12,7 @@ import api.bank.utils.dispatcher.DispatcherProvider
 import api.bank.utils.listener.SimpleWindowListener
 import com.google.gson.Gson
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -65,8 +66,10 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         settings = persistentStateComponent,
         fileManager = fileManager,
     ) {
-        save()
         close(0, true)
+        ApplicationManager.getApplication().invokeLater {
+            MainDialog(project).show()
+        }
     }
 
     private val variablesTab = VariablesTab(envVarCollection.data, gson)

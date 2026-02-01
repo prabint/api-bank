@@ -6,11 +6,14 @@ import api.bank.models.Result.Error
 import api.bank.models.Result.Success
 import api.bank.models.SchemaType
 import api.bank.settings.ApiBankSettingsPersistentStateComponent
+import api.bank.settings.ApiBankSettingsState
 import api.bank.utils.FileManager
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.readText
@@ -59,10 +62,6 @@ class SettingsTab(
             }.rowComment("Example: ${Constants.FILE_VARIABLE_COLLECTION_PERSISTENT}")
 
             row { cell(variablesErrorLabel) }
-
-            row {
-                button("Restart Plugin To Apply Changes") { onApply() }
-            }
         }
     }
 
@@ -136,6 +135,21 @@ class SettingsTab(
                         errorLabel.foreground = JBColor.GREEN
                         errorLabel.text = "Import success"
                         filePathTextField.text = selectedFile.path
+
+                        settings.loadState(
+                            ApiBankSettingsState(
+                                requestFilePath = requestTextField.text,
+                                envFilePath = envTextField.text
+                            )
+                        )
+
+                        Messages.showInfoMessage(
+                            project,
+                            "Data imported successfully! The editor will now close. Please reopen it to see your new data.",
+                            "Import Successful"
+                        )
+
+                        onApply()
                     }
                 }
             }

@@ -1,8 +1,8 @@
 package api.bank.unit.tests
 
+import api.bank.models.Result
 import api.bank.models.SchemaType
 import api.bank.utils.FileManager
-import api.bank.models.Result
 import io.mockk.mockk
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Test

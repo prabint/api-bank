@@ -116,7 +116,11 @@ class SettingsTab(
                     importSource = ImportSource(
                         path = selectedFile.path,
                         text = text,
-                        write = { selectedFile.writeText(it) }
+                        write = {
+                            WriteCommandAction.runWriteCommandAction(project) {
+                                selectedFile.writeText(it)
+                            }
+                        }
                     ),
                 )
 

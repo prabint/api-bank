@@ -78,7 +78,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         gson = gson,
         coreRepository = coreRepository,
         dispatchProvider = dispatchProvider,
-        treeModel = constructTreeModel(gson),
+        treeModel = constructTreeModel(),
         getVariables = { variablesTab.getActive() },
     )
 
@@ -141,7 +141,7 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
         super.doOKAction()
     }
 
-    private fun constructTreeModel(gson: Gson): DefaultTreeModel {
+    private fun constructTreeModel(): DefaultTreeModel {
         val root = DefaultMutableTreeNode()
 
         val jsonFile = fileManager.getRequestsFile()

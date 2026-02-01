@@ -1,31 +1,31 @@
 package api.bank.multitab
 
 import api.bank.models.Constants
-import api.bank.models.RequestGroup
-import api.bank.models.VariableCollection
+import api.bank.models.ImportSource
+import api.bank.models.Result.Error
+import api.bank.models.Result.Success
+import api.bank.models.SchemaType
 import api.bank.settings.ApiBankSettingsPersistentStateComponent
-import com.google.common.reflect.TypeToken
-import com.google.gson.Gson
-import com.google.gson.JsonParser
-import com.google.gson.JsonSyntaxException
+import api.bank.utils.FileManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.readText
+import com.intellij.openapi.vfs.writeText
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.panel
-import org.jetbrains.annotations.VisibleForTesting
 
 class SettingsTab(
     private val project: Project,
-    private val gson: Gson,
     private val logger: Logger,
     private val settings: ApiBankSettingsPersistentStateComponent,
-    private val onApply: () -> Unit
+    private val fileManager: FileManager,
+    private val onApply: () -> Unit,
 ) {
     internal val requestTextField = JBTextField(settings.state.requestFilePath).apply { isEnabled = false }
     internal val envTextField = JBTextField(settings.state.envFilePath).apply { isEnabled = false }
@@ -45,11 +45,6 @@ class SettingsTab(
         RequestGroups,
         VariableCollection,
     }
-
-    data class Result(
-        val success: Boolean,
-        val message: String
-    )
 
     fun get() = panel {
         group("Paths") {
@@ -78,13 +73,12 @@ class SettingsTab(
         }
 
         return TextFieldWithBrowseButton(filePathTextField) {
-            FileChooser.chooseFile(fileChooserDescriptor, project, null)?.let { selectedFile ->
-                val fileAsJsonString = selectedFile.readText()
-
-                val result = when (selectionType) {
-                    SelectionType.RequestGroups -> isValidRequestGroupFile(fileAsJsonString)
-                    SelectionType.VariableCollection -> isValidEnvVarFile(fileAsJsonString)
-                }
+            FileChooser.chooseFile(fileChooserDescriptor, project, null)?.let { selectedFile: VirtualFile ->
+                val text = selectedFile.readText()
+                val detectedSchemaType = fileManager.getSchemaType(
+                    text = text,
+                    filePath = selectedFile.path
+                )
 
                 val errorLabel = when (selectionType) {
                     SelectionType.RequestGroups -> requestGroupErrorLabel
@@ -96,88 +90,51 @@ class SettingsTab(
                     SelectionType.VariableCollection -> settings.state.envFilePath
                 }
 
-                if (result.success) {
-                    errorLabel.isVisible = false
-                    errorLabel.text = ""
-                    filePathTextField.text = selectedFile.path
-                } else {
-                    errorLabel.text = result.message
+                fun setErrorLabel(message: String?) {
+                    errorLabel.text = message
                     errorLabel.isVisible = true
+                    errorLabel.foreground = JBColor.RED
                     filePathTextField.text = previousPath
                 }
+
+                val expectedType =
+                    if (selectionType == SelectionType.RequestGroups && detectedSchemaType != SchemaType.REQUESTS) {
+                        SchemaType.REQUESTS
+                    } else if (selectionType == SelectionType.VariableCollection && detectedSchemaType != SchemaType.VARIABLES) {
+                        SchemaType.VARIABLES
+                    } else {
+                        null
+                    }
+
+                if (expectedType != null) {
+                    logger.error("Expected $expectedType but was $detectedSchemaType")
+                    setErrorLabel("Did you mean to import a $expectedType json file? Detected type was $detectedSchemaType")
+                    return@TextFieldWithBrowseButton
+                }
+
+                val result = fileManager.importBank(
+                    importSource = ImportSource(
+                        path = selectedFile.path,
+                        text = text,
+                        write = { selectedFile.writeText(it) }
+                    ),
+                )
+
+                when (result) {
+                    is Error -> {
+                        logger.error("Settings tab import error. ${result.message}", result.exception)
+                        setErrorLabel(result.message)
+                    }
+
+                    is Success<*> -> {
+                        logger.debug("Settings tab import success")
+                        errorLabel.isVisible = true
+                        errorLabel.foreground = JBColor.GREEN
+                        errorLabel.text = "Import success"
+                        filePathTextField.text = selectedFile.path
+                    }
+                }
             }
-        }
-    }
-
-    @VisibleForTesting
-    internal fun isValidEnvVarFile(jsonString: String): Result {
-        val element = try {
-            JsonParser.parseString(jsonString)
-        } catch (e: JsonSyntaxException) {
-            logger.error(e)
-            return Result(success = false, message = "Parsing failed. ${e.stackTraceToString()}")
-        }
-
-        val fieldsPresent = element.isJsonArray && element.asJsonArray.all {
-            it.isJsonObject &&
-                    it.asJsonObject.has("id") &&
-                    it.asJsonObject.has("name") &&
-                    it.asJsonObject.has("variableItems") &&
-                    it.asJsonObject.has("isActive")
-        }
-
-        if (!fieldsPresent) {
-            logger.error("Missing fields in EnvVar json file: $jsonString")
-            return Result(
-                success = false,
-                message = "Check your json file for missing id, name, variableItems or isActive fields"
-            )
-        }
-
-        return try {
-            gson.fromJson<List<VariableCollection>>(
-                jsonString,
-                object : TypeToken<List<VariableCollection>>() {}.type
-            )
-            Result(success = true, message = "")
-        } catch (e: Exception) {
-            logger.error(e)
-            Result(success = false, message = "Parsing failed. ${e.stackTraceToString()}")
-        }
-    }
-
-    @VisibleForTesting
-    internal fun isValidRequestGroupFile(jsonString: String): Result {
-        val element = try {
-            JsonParser.parseString(jsonString)
-        } catch (e: JsonSyntaxException) {
-            logger.error(e)
-            return Result(success = false, message = "Parsing failed. ${e.stackTraceToString()}")
-        }
-
-        val fieldsPresent = element.isJsonArray && element.asJsonArray.all {
-            it.isJsonObject &&
-                    it.asJsonObject.has("groupName") &&
-                    it.asJsonObject.has("requests")
-        }
-
-        if (!fieldsPresent) {
-            logger.error("Missing fields in RequestDetails json file: $jsonString")
-            return Result(
-                success = false,
-                message = "Check your json file for missing groupName or requests fields"
-            )
-        }
-
-        return try {
-            gson.fromJson<List<RequestGroup>>(
-                jsonString,
-                object : TypeToken<List<RequestGroup>>() {}.type
-            )
-            Result(success = true, message = "")
-        } catch (e: Exception) {
-            logger.error(e)
-            Result(success = false, message = "Parsing failed. ${e.stackTraceToString()}")
         }
     }
 }

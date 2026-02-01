@@ -61,9 +61,9 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
 
     private val settingsTab = SettingsTab(
         project = project,
-        gson = gson,
         logger = logger,
         settings = persistentStateComponent,
+        fileManager = fileManager,
     ) {
         save()
         close(0, true)

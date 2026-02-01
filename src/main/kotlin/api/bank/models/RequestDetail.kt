@@ -1,15 +1,26 @@
 package api.bank.models
 
 import api.bank.utils.FileManager.Companion.JSON_KEY_DATA
+import api.bank.utils.FileManager.Companion.JSON_KEY_SCHEMA_TYPE
 import api.bank.utils.FileManager.Companion.JSON_KEY_SCHEMA_VERSION
+import api.bank.utils.FileManager.Companion.SUPPORTED_SCHEMA_VERSION
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.*
 
+enum class SchemaType(val type: String) {
+    REQUESTS("requests"),
+    VARIABLES("variables"),
+    UNKNOWN("unknown"),
+}
+
 @Serializable
 data class RequestCollection(
     @SerialName(JSON_KEY_SCHEMA_VERSION)
-    val schemaVersion: Int = 0,
+    val schemaVersion: Int = SUPPORTED_SCHEMA_VERSION,
+
+    @SerialName(JSON_KEY_SCHEMA_TYPE)
+    val type: String = SchemaType.REQUESTS.type,
 
     @SerialName(JSON_KEY_DATA)
     val data: ArrayList<RequestGroup> = ArrayList(),

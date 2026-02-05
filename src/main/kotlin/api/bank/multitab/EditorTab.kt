@@ -1,14 +1,11 @@
 package api.bank.multitab
 
-import api.bank.list.toListOfKeyValue
 import api.bank.models.Constants
 import api.bank.models.Constants.COLOR_GREEN
 import api.bank.models.Constants.COLOR_RED
 import api.bank.models.RequestDetail
 import api.bank.models.ResponseDetail
 import api.bank.repository.CoreRepository
-import api.bank.table.TableCellListener
-import api.bank.table.TableColumnAdjuster
 import api.bank.utils.*
 import api.bank.utils.dispatcher.DispatcherProvider
 import api.bank.utils.listener.SimpleDocumentListener
@@ -24,18 +21,17 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
+import com.intellij.ui.table.TableView
 import com.intellij.util.ui.JBUI
 import kotlinx.coroutines.*
 import java.awt.*
 import java.awt.Cursor.getPredefinedCursor
-import java.awt.event.ActionEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.*
 import javax.swing.border.CompoundBorder
 import javax.swing.border.LineBorder
 import javax.swing.event.DocumentEvent
-import javax.swing.table.DefaultTableModel
 import javax.swing.text.DefaultCaret
 import kotlin.random.Random.Default.nextLong
 
@@ -52,14 +48,15 @@ class EditorTab(
     private val onMethodUpdated: (RequestDetail) -> Unit,
 ) {
     // UI components
-    private lateinit var jHeader: JBTable
+    private lateinit var jHeader: TableView<Array<String>>
     private lateinit var jBody: JBTextArea
     private lateinit var jOutput: JBTextArea
     private lateinit var jOutputLabel: JBLabel
     private lateinit var jResponseHeader: JBTable
 
     // Data
-    private val headerTableModel = DefaultTableModel()
+    private val headerTableModel = getTableModel()
+    private val responseTableModel = getTableModel()
 
     // Network
     private var networkJob: Job? = null
@@ -311,34 +308,12 @@ class EditorTab(
     }
 
     private fun setUpHeaderTable(): JComponent {
-        JBTable().apply {
+        TableView<Array<String>>().apply {
             jHeader = this
             accessibleContext.accessibleName = "Request header table"
             model = headerTableModel
-
-            headerTableModel.setDataVector(
-                requestDetailInMemory.header.toTypedArray(),
-                arrayOf("Key", "Value")
-            )
-
-            jHeader.columnModel.getColumn(0).minWidth = 80
-            jHeader.columnModel.getColumn(1).minWidth = 300
-
-            // Listen for cell value changes
-            TableCellListener(this, object : AbstractAction() {
-                override fun actionPerformed(e: ActionEvent) {
-                    requestDetailInMemory.header = headerTableModel.toListOfKeyValue()
-                }
-            })
-
-            autoResizeMode = JBTable.AUTO_RESIZE_OFF
-            TableColumnAdjuster(jHeader, 10).apply {
-                adjustColumns()
-                setDynamicAdjustment(true)
-                setOnlyAdjustLarger(true)
-                setColumnHeaderIncluded(true)
-                setColumnDataIncluded(true)
-            }
+            applySharedTableDecorations()
+            headerTableModel.items = requestDetailInMemory.header
         }
 
         return createPanelWithTopControls(
@@ -353,18 +328,10 @@ class EditorTab(
 
     private fun setUpResponseHeaderTable(): JBScrollPane {
         return JBScrollPane(
-            JBTable(DefaultTableModel(arrayOf("Key", "Value"), 0)).apply {
+            TableView<Array<String>>().apply {
                 jResponseHeader = this
-                columnModel.getColumn(0).minWidth = 80
-                columnModel.getColumn(1).minWidth = 300
-                autoResizeMode = JBTable.AUTO_RESIZE_OFF
-                TableColumnAdjuster(this, 10).apply {
-                    adjustColumns()
-                    setDynamicAdjustment(true)
-                    setOnlyAdjustLarger(true)
-                    setColumnHeaderIncluded(true)
-                    setColumnDataIncluded(true)
-                }
+                model = responseTableModel
+                applySharedTableDecorations()
             }
         ).apply {
             border = CompoundBorder(
@@ -376,13 +343,10 @@ class EditorTab(
 
     private fun onAddRowClicked() {
         headerTableModel.addRow(arrayOf("", ""))
-        requestDetailInMemory.header.add(arrayOf("", ""))
-        if (headerTableModel.dataVector.isNotEmpty()) {
-            jHeader.setRowSelectionInterval(
-                headerTableModel.dataVector.lastIndex,
-                headerTableModel.dataVector.lastIndex
-            )
-        }
+        jHeader.setRowSelectionInterval(
+            headerTableModel.items.lastIndex,
+            headerTableModel.items.lastIndex
+        )
     }
 
     private fun onDeleteRowClicked() {
@@ -391,18 +355,12 @@ class EditorTab(
         headerTableModel.removeRow(selectedRow)
 
         // Fix: Force selection of next row to avoid black cell issue
-        if (headerTableModel.dataVector.isNotEmpty()) {
+        if (headerTableModel.items.isNotEmpty()) {
             when (selectedRow) {
                 0 -> jHeader.setRowSelectionInterval(0, 0)
                 else -> jHeader.setRowSelectionInterval(selectedRow - 1, selectedRow - 1)
             }
         }
-
-        if (headerTableModel.dataVector.size > 0) {
-            jHeader.setRowSelectionInterval(1, 1)
-        }
-
-        requestDetailInMemory.header.removeAt(selectedRow)
     }
 
     /**
@@ -514,11 +472,11 @@ class EditorTab(
         }
 
         // Populate response header table
-        val model = DefaultTableModel(arrayOf("Key", "Value"), 0)
+        val data = ArrayList<Array<String>>()
         for ((key, values) in output.responseHeaders) {
-            model.addRow(arrayOf(key, values))
+            val value = values.joinToString("\n")
+            data.add(arrayOf(key, value))
         }
-        jResponseHeader.model = model
-        model.fireTableDataChanged()
+        responseTableModel.items = data
     }
 }

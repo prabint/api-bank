@@ -1,15 +1,10 @@
 package api.bank.multitab
 
 import api.bank.list.ListTransferHandler
-import api.bank.list.toListOfKeyValue
 import api.bank.models.VariableCollection
 import api.bank.models.VariableDetail
-import api.bank.table.TableCellListener
-import api.bank.table.TableColumnAdjuster
-import api.bank.utils.createActionButton
-import api.bank.utils.createPanelWithTopControls
+import api.bank.utils.*
 import api.bank.utils.listener.SimpleDocumentListener
-import api.bank.utils.pushToNorthwest
 import com.google.gson.Gson
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.ui.MessageConstants
@@ -19,19 +14,17 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.table.JBTable
+import com.intellij.ui.table.TableView
 import com.intellij.util.ui.JBUI
 import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.datatransfer.DataFlavor
-import java.awt.event.ActionEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.util.*
 import javax.swing.*
 import javax.swing.event.*
-import javax.swing.table.DefaultTableModel
 
 /**
  * UI that has list of variable collection on the left and table on the right
@@ -40,12 +33,12 @@ class VariablesTab(
     private val collectionsInMemory: ArrayList<VariableDetail>,
     private val gson: Gson,
 ) {
-    private lateinit var jTable: JBTable
+    private lateinit var jTable: TableView<Array<String>>
     private lateinit var jbSplitter: JBSplitter
     private lateinit var jDisplayName: JBTextField
     private lateinit var jList: JBList<VariableDetail>
 
-    private val tableModel = DefaultTableModel()
+    private val tableModel = getTableModel()
     private val listModel = DefaultListModel<VariableDetail>()
 
     fun getActive() = collectionsInMemory.find { it.isActive == true }?.variableItems ?: arrayListOf()
@@ -200,29 +193,12 @@ class VariablesTab(
         gbc.gridy = 1
         gbc.gridwidth = 2
         gbc.fill = GridBagConstraints.BOTH
-        JBTable().apply {
+        TableView<Array<String>>().apply {
             jTable = this
             accessibleContext.accessibleName = "Variables table"
             model = tableModel
-
-            // Set initial table
+            applySharedTableDecorations()
             setTableModel()
-
-            // Listen for cell value changes
-            TableCellListener(this, object : AbstractAction() {
-                override fun actionPerformed(e: ActionEvent) {
-                    collectionsInMemory[jList.selectedIndex].variableItems = tableModel.toListOfKeyValue()
-                }
-            })
-
-            autoResizeMode = JBTable.AUTO_RESIZE_OFF
-            TableColumnAdjuster(jTable, 10).apply {
-                adjustColumns()
-                setDynamicAdjustment(true)
-                setOnlyAdjustLarger(true)
-                setColumnHeaderIncluded(true)
-                setColumnDataIncluded(true)
-            }
         }
 
         mainPanel.add(
@@ -269,14 +245,7 @@ class VariablesTab(
     private fun setTableModel() {
         val selectedIndex = jList.selectedIndex
         if (selectedIndex == -1) return
-
-        tableModel.setDataVector(
-            collectionsInMemory[selectedIndex].variableItems.toTypedArray(),
-            arrayOf("Key", "Value")
-        )
-
-        jTable.columnModel.getColumn(0).minWidth = 80
-        jTable.columnModel.getColumn(1).minWidth = 300
+        tableModel.items = collectionsInMemory[selectedIndex].variableItems
     }
 
     private fun setUpPopUpMenu(list: JBList<VariableDetail>, e: MouseEvent) {
@@ -303,16 +272,25 @@ class VariablesTab(
     }
 
     private fun onAddNewRowClicked() {
-        val newRowData = arrayOf("", "")
-        tableModel.addRow(newRowData)
-        collectionsInMemory[jList.selectedIndex].variableItems.add(newRowData)
+        tableModel.addRow(arrayOf("", ""))
+        jTable.setRowSelectionInterval(
+            tableModel.items.lastIndex,
+            tableModel.items.lastIndex
+        )
     }
 
     private fun onDeleteRowClicked() {
         val selectedRow = jTable.selectedRow
         if (selectedRow == -1) return
         tableModel.removeRow(selectedRow)
-        collectionsInMemory[jList.selectedIndex].variableItems.removeAt(selectedRow)
+
+        // Fix: Force selection of next row to avoid black cell issue
+        if (tableModel.items.isNotEmpty()) {
+            when (selectedRow) {
+                0 -> jTable.setRowSelectionInterval(0, 0)
+                else -> jTable.setRowSelectionInterval(selectedRow - 1, selectedRow - 1)
+            }
+        }
     }
 
     private fun onDeleteListItemClicked() {

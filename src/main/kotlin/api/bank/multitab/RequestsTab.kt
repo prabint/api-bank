@@ -133,6 +133,7 @@ class RequestsTab(
 
     internal fun get(): JComponent {
         listAndEditorSplitter = JBSplitter(false, 0.3f, 0.2f, 0.7f).apply {
+            splitterProportionKey = "api.bank.requests.main.splitter"
             firstComponent = setUpLeftPanel()
             secondComponent = null
         }

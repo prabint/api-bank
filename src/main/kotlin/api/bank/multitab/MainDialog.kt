@@ -19,6 +19,7 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.JBUI
 import kotlinx.serialization.json.Json
+import org.jetbrains.annotations.NonNls
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.GlobalContext
@@ -139,6 +140,10 @@ class MainDialog(private val project: Project) : DialogWrapper(project), KoinCom
     override fun doOKAction() {
         save()
         super.doOKAction()
+    }
+
+    override fun getDimensionServiceKey(): @NonNls String? {
+        return "api.bank.MainDialog.DimensionKey"
     }
 
     private fun constructTreeModel(): DefaultTreeModel {

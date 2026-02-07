@@ -168,6 +168,7 @@ class EditorTab(
 
         val mainPanel = JPanel(GridBagLayout()).apply {
             add(JBSplitter(true, 0.40f).apply {
+                splitterProportionKey = "api.bank.editor.main.splitter"
                 firstComponent = upperPanel
                 secondComponent = lowerPanel
             }, gbc)
@@ -226,6 +227,7 @@ class EditorTab(
         }
 
         return JBSplitter(true, 0.5f).apply {
+            splitterProportionKey = "api.bank.editor.body.splitter"
             firstComponent = bodyPanel
             secondComponent = tabbedBodyAndHeaderPanel()
         }

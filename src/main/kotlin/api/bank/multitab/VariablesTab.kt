@@ -93,6 +93,7 @@ class VariablesTab(
 
     internal fun get(): JPanel {
         jbSplitter = JBSplitter(false, 0.3f, 0.2f, 0.7f)
+        jbSplitter.splitterProportionKey = "api.bank.variables.panel.splitter"
         jbSplitter.firstComponent = createLeftPanel()
         jbSplitter.secondComponent = when (listModel.isEmpty) {
             true -> createEmptyRightPanel()

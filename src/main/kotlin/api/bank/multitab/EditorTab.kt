@@ -3,6 +3,8 @@ package api.bank.multitab
 import api.bank.models.Constants
 import api.bank.models.Constants.COLOR_GREEN
 import api.bank.models.Constants.COLOR_RED
+import api.bank.models.Constants.WRAP_REQUEST_BODY
+import api.bank.models.Constants.WRAP_RESPONSE_BODY
 import api.bank.models.RequestDetail
 import api.bank.models.ResponseDetail
 import api.bank.repository.CoreRepository
@@ -199,7 +201,7 @@ class EditorTab(
         }
 
         val bodyWithController = createPanelWithLeftControls(
-            createToggleButton("Wrap", AllIcons.Actions.ToggleSoftWrap) {
+            createToggleButton(text = "Wrap", icon = AllIcons.Actions.ToggleSoftWrap, key = WRAP_REQUEST_BODY) {
                 jBody.wrapStyleWord = it
                 jBody.lineWrap = it
             }.apply {
@@ -238,7 +240,7 @@ class EditorTab(
      */
     fun tabbedBodyAndHeaderPanel(): JPanel {
         val outputWithController = createPanelWithLeftControls(
-            createToggleButton("Wrap", AllIcons.Actions.ToggleSoftWrap) {
+            createToggleButton(text = "Wrap", icon = AllIcons.Actions.ToggleSoftWrap, key = WRAP_RESPONSE_BODY) {
                 jOutput.wrapStyleWord = it
                 jOutput.lineWrap = it
             },

@@ -1,5 +1,6 @@
 package api.bank.utils
 
+import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.actionSystem.impl.ActionButton
 import com.intellij.ui.JBColor
@@ -10,8 +11,11 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.*
 
-fun createToggleButton(text: String, icon: Icon, onClick: (Boolean) -> Unit): ActionButton {
-    var localState = false
+fun createToggleButton(text: String, icon: Icon, key: String?, onClick: (Boolean) -> Unit): ActionButton {
+    var localState = key?.let { PropertiesComponent.getInstance().getBoolean(it, false) } ?: false
+
+    // Perform auto-click so that existing text wraps upon loading the UI
+    onClick(localState)
 
     return ActionButton(
         object : ToggleAction() {
@@ -21,6 +25,7 @@ fun createToggleButton(text: String, icon: Icon, onClick: (Boolean) -> Unit): Ac
 
             override fun setSelected(e: AnActionEvent, state: Boolean) {
                 localState = state
+                key?.let { PropertiesComponent.getInstance().setValue(it, state) }
                 onClick(state)
             }
         },

@@ -8,4 +8,8 @@ object Constants {
     internal const val FILE_VARIABLE_COLLECTION_PERSISTENT = "variable_collection_persistent.json"
     internal const val FILE_SETTINGS = "api_bank_plugin_settings.xml"
     internal const val FILE_API_DETAIL_PERSISTENT = "api_detail_persistent.json"
+
+    // PropertiesComponent keys
+    const val WRAP_REQUEST_BODY = "api.bank.wrap.request.body"
+    const val WRAP_RESPONSE_BODY = "api.bank.wrap.response.body"
 }

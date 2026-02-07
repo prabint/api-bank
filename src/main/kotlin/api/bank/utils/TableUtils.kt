@@ -1,12 +1,30 @@
 package api.bank.utils
 
+import api.bank.list.TableTransferHandler
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
+import java.awt.datatransfer.DataFlavor
 import javax.swing.DefaultCellEditor
+import javax.swing.DropMode
+import javax.swing.ListSelectionModel
 import javax.swing.table.TableCellEditor
+
+private val TABLE_DATA_FLAVOR = DataFlavor(
+    Array::class.java,
+    "VariableRow"
+)
+
+fun TableView<Array<String>>.applySharedTableDnd() {
+    setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+    dropMode = DropMode.INSERT
+    dragEnabled = true
+    transferHandler = TableTransferHandler<Array<String>>(TABLE_DATA_FLAVOR) { from, to ->
+        setRowSelectionInterval(to, to)
+    }
+}
 
 fun TableView<Array<String>>.applySharedTableDecorations() {
     tableHeader.apply {

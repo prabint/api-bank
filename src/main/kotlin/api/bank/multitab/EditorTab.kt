@@ -312,6 +312,7 @@ class EditorTab(
             jHeader = this
             accessibleContext.accessibleName = "Request header table"
             model = headerTableModel
+            applySharedTableDnd()
             applySharedTableDecorations()
             headerTableModel.items = requestDetailInMemory.header
         }

@@ -1,7 +1,6 @@
 package api.bank.multitab
 
 import api.bank.list.ListTransferHandler
-import api.bank.models.VariableCollection
 import api.bank.models.VariableDetail
 import api.bank.utils.*
 import api.bank.utils.listener.SimpleDocumentListener
@@ -148,7 +147,7 @@ class VariablesTab(
                     selectionMode = ListSelectionModel.SINGLE_SELECTION
                     dropMode = DropMode.INSERT
                     dragEnabled = true
-                    transferHandler = ListTransferHandler<VariableCollection>(LIST_DATA_FLAVOR) { from, to ->
+                    transferHandler = ListTransferHandler<VariableDetail>(LIST_DATA_FLAVOR) { from, to ->
                         val fromItem = collectionsInMemory[from]
                         collectionsInMemory.removeAt(from)
                         collectionsInMemory.add(to, fromItem)
@@ -197,6 +196,7 @@ class VariablesTab(
             jTable = this
             accessibleContext.accessibleName = "Variables table"
             model = tableModel
+            applySharedTableDnd()
             applySharedTableDecorations()
             setTableModel()
         }
@@ -392,8 +392,8 @@ class VariablesTab(
 
     companion object {
         private val LIST_DATA_FLAVOR = DataFlavor(
-            VariableCollection::class.java,
-            "java/${VariableCollection::class.simpleName}"
+            VariableDetail::class.java,
+            "java/${VariableDetail::class.simpleName}"
         )
     }
 }

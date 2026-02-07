@@ -1,3 +1,10 @@
+## 1.0.8
+
+### Added
+
+- UI improvements
+- Improved internal data handling
+
 ## 1.0.7
 
 ### Added

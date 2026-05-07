@@ -1,3 +1,5 @@
+import org.gradle.api.GradleException
+import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
@@ -118,7 +120,10 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            recommended()
+            ide(
+                providers.gradleProperty("platformType"),
+                providers.gradleProperty("platformVersion"),
+            )
         }
     }
 }

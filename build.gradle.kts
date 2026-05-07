@@ -1,5 +1,3 @@
-import org.gradle.api.GradleException
-import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
@@ -48,7 +46,6 @@ dependencies {
     implementation(libs.koin.core)
     implementation(libs.koin.annotations)
 
-    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.kotlinx.serialization.json)
 

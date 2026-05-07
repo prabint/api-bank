@@ -13,7 +13,6 @@ json = { group = "org.json", name = "json", version = "20250107" }
 koin-core = { group = "io.insert-koin", name = "koin-core", version = "4.0.4" }
 koin-annotations = { group = "io.insert-koin", name = "koin-annotations", version = "2.0.1-Beta1" }
 
-kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 

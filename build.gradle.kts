@@ -117,7 +117,7 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            ide(
+            create(
                 providers.gradleProperty("platformType"),
                 providers.gradleProperty("platformVersion"),
             )

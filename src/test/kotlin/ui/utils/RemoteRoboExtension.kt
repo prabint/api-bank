@@ -34,20 +34,20 @@ class RemoteRobotExtension : AfterTestExecutionCallback, ParameterResolver {
     }
     private val client = OkHttpClient()
 
-    override fun supportsParameter(parameterContext: ParameterContext?, extensionContext: ExtensionContext?): Boolean {
-        return parameterContext?.parameter?.type?.equals(RemoteRobot::class.java) ?: false
+    override fun supportsParameter(parameterContext: ParameterContext, extensionContext: ExtensionContext): Boolean {
+        return parameterContext.parameter.type?.equals(RemoteRobot::class.java) ?: false
     }
 
-    override fun resolveParameter(parameterContext: ParameterContext?, extensionContext: ExtensionContext?): Any {
+    override fun resolveParameter(parameterContext: ParameterContext, extensionContext: ExtensionContext): Any? {
         return remoteRobot
     }
 
-    override fun afterTestExecution(context: ExtensionContext?) {
-        val testMethod: Method = context?.requiredTestMethod ?: throw IllegalStateException("test method is null")
+    override fun afterTestExecution(context: ExtensionContext) {
+        val testMethod: Method = context.requiredTestMethod
         val testMethodName = testMethod.name
-        val testFailed: Boolean = context.executionException?.isPresent ?: false
+        val testFailed: Boolean = context.executionException.isPresent
         if (testFailed) {
-//            saveScreenshot(testMethodName)
+            // saveScreenshot(testMethodName)
             saveIdeaFrames(testMethodName)
             saveHierarchy(testMethodName)
         }

@@ -1,31 +1,34 @@
 [versions]
-kotlinx-coroutines = "1.10.2"
-remote-robot = "0.11.23"
-junit = "5.13.0-M2"
-changelog = "2.2.1"
-intelliJPlatform = "2.5.0"
+changelog = "2.5.0"
+intelliJPlatform = "2.16.0"
+json = "20251224"
+junit = "6.0.3"
+koin = "4.0.4"
+koin-annotations = "2.0.1-Beta1"
 kotlin = "2.1.20"
-serialization = "1.7.3"
+kotlinx-coroutines = "1.10.2"
+mockito-kotlin = "6.3.0"
 mockk = "1.14.9"
+okhttp = "5.3.2"
+remote-robot = "0.11.23"
+serialization = "1.7.3"
 
 [libraries]
-json = { group = "org.json", name = "json", version = "20250107" }
-koin-core = { group = "io.insert-koin", name = "koin-core", version = "4.0.4" }
-koin-annotations = { group = "io.insert-koin", name = "koin-annotations", version = "2.0.1-Beta1" }
-
-kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
-
-mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version = "5.4.0" }
-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version = "5.0.0-alpha.14" }
-remote-robot = { group = "com.intellij.remoterobot", name = "remote-robot", version.ref = "remote-robot" }
-remote-fixtures = { group = "com.intellij.remoterobot", name = "remote-fixtures", version.ref = "remote-robot" }
-mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
-junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "1.13.0-M2" }
+json = { group = "org.json", name = "json", version.ref = "json" }
 junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junit" }
 junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junit" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit" }
 junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine", version.ref = "junit" }
+koin-annotations = { group = "io.insert-koin", name = "koin-annotations", version.ref = "koin-annotations" }
+koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito-kotlin" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+remote-fixtures = { group = "com.intellij.remoterobot", name = "remote-fixtures", version.ref = "remote-robot" }
+remote-robot = { group = "com.intellij.remoterobot", name = "remote-robot", version.ref = "remote-robot" }
 
 [plugins]
 changelog = { id = "org.jetbrains.changelog", version.ref = "changelog" }

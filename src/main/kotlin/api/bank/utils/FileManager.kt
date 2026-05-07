@@ -6,11 +6,11 @@ import api.bank.settings.ApiBankSettingsPersistentStateComponent
 import api.bank.utils.FileManager.Companion.JSON_KEY_SCHEMA_TYPE
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
+import groovy.lang.Singleton
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import org.jetbrains.annotations.VisibleForTesting
-import org.koin.core.annotation.Singleton
 import java.io.File
 import javax.swing.tree.TreeModel
 

@@ -3,3 +3,5 @@
 build/
 .qodo
 .intellijPlatform
+.kotlin/
+bin
